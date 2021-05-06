@@ -1,4 +1,5 @@
 import sys
+import parser
 from parser import Parser, MyTransformer
 import lark
 import re
@@ -104,13 +105,12 @@ class PromptShell:
                         self.error_handler(error.token)    
                     
                     # queues: prompt messages to be printed in order
-                    queues = self.transformer.get_queues()
 
-                    while (queues):
+                    while (parser._queues):
                         # print the responses to queries
-                        self.stdout.write(queues.pop(0))
+                        self.stdout.write(parser._queues.pop(0))
                         self.stdout.flush
-                        if (queues):
+                        if (parser._queues):
                             self.stdout.write(self.prompt)
 
                     self.stdout.flush()
