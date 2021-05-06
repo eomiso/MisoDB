@@ -128,5 +128,3 @@ class MyTransformer(Transformer):
                 self.fmtstr.format(query_type=
                             self.query_types['delete_query']))
 
-
-[[{'Query': 'create_table', 'Table_Def': {'Table_Name': 'student', 'Elem_List': [{'Col_Def': {'Col_Name': 'student_number', 'Data_Type': 'int'}}, {'Col_Def': {'Col_Name': 'name', 'Data_Type': 'char(10)'}}, {'Col_Def': {'Col_Name': 'acc_num', 'Data_Type': 'int'}}, {'foreign_key': (['acc_num'], 'account', ['acc_number'])}]}}]]

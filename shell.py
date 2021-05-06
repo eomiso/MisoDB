@@ -101,10 +101,11 @@ class PromptShell:
                     try:
                         t = self.sql_parser.parse(self.query)
                         t = self.transformer.transform(t) 
-                        print(t)
                     except lark.exceptions.UnexpectedToken as error:
                         self.error_handler(error.token)    
                     
+                    # TODO makethe methods to compute the database
+
                     # queues: prompt messages to be printed in order
 
                     while (parser._queues):
