@@ -3,13 +3,15 @@ import parser
 from parser import Parser, MyTransformer
 import lark
 import re
+from tabledb import RelationDB
 from utils import get_index
 
 
 PROMPT="DB_2014-15554> "
 INTRO="Your input should end with ';' to activate the interpreter."
 
-
+COMMAND = 'Query'
+PARAM = 'Param'
 
 class PromptShell:
     """ A shell for a prompt.
@@ -18,6 +20,7 @@ class PromptShell:
     """
     sql_parser = Parser().sql_parser # class Lark from parser.py
     transformer = MyTransformer() # class inheriting Transformer from parser.py
+    db = RelationDB('myDB.db')
 
     def __init__(self):
         """ Instantiate a interpreter framework""" 
@@ -104,7 +107,10 @@ class PromptShell:
                     except lark.exceptions.UnexpectedToken as error:
                         self.error_handler(error.token)    
                     
-                    # TODO makethe methods to compute the database
+                    # TODO make the methods to compute the database
+
+                    for query in t:
+                        getattr(self.db, query[COMMAND])(query[PARAM]) # t[QUERY] could_be create_table, desc_table ...
 
                     # queues: prompt messages to be printed in order
 
