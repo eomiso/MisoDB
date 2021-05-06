@@ -31,9 +31,23 @@ class MyTransformer(Transformer):
 
     # methods for each corresponding queries
     def create_table_query(self, tree):
+        print (tree)
         _queues.append(
                 self.fmtstr.format(query_type=
                             self.query_types['create_table_query']))
+    
+
+    def data_type(self, tree):
+        ret = ""
+        for token in tree:
+            ret += token.value
+        return ret
+    
+    def table_name(self, tree):
+        return tree[0].value
+
+    def column_name(self, tree):
+        return tree[0].value
 
     def select_query(self, tree):
         _queues.append(
