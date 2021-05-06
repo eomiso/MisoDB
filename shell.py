@@ -100,7 +100,8 @@ class PromptShell:
                     self.query = " ".join(self.input_queue)
                     try:
                         t = self.sql_parser.parse(self.query)
-                        self.transformer.transform(t) 
+                        t = self.transformer.transform(t) 
+                        print(t)
                     except lark.exceptions.UnexpectedToken as error:
                         self.error_handler(error.token)    
                     
