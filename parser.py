@@ -64,7 +64,3 @@ class MyTransformer(Transformer):
         _queues.append(
                 self.fmtstr.format(query_type=
                             self.query_types['delete_query']))
-
-
-t = Parser().sql_parser.parse('show tables;')
-a = MyTransformer()
