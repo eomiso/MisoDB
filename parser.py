@@ -109,6 +109,7 @@ class MyTransformer(Transformer):
         _queues.append(
                 self.fmtstr.format(query_type=
                             self.query_types['drop_table_query']))
+        return {'Query': 'drop_table', 'Table_Name': tree[2]}
 
     def descending_query(self, tree):
         _queues.append(
@@ -120,6 +121,7 @@ class MyTransformer(Transformer):
         _queues.append(
                 self.fmtstr.format(query_type=
                             self.query_types['show_tables_query']))
+        return {'Query': 'show_tables'}
 
     def delete_query(self, tree):
         _queues.append(
