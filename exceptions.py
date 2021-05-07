@@ -30,6 +30,10 @@ class ReferenceTableExistenceError(RelationalDBException):
     def __init__(self):
         super().__init__(f"{self.__class__.__name__}:  Create table has failed: foreign key references non existing table\n")
 
+class ForeignKeyandReferenceKeyNumMatchError(RelationalDBException):
+    def __init__(self, foreign, reference):
+        super().__init__(f"{self.__class__.__name__}: Create table has failed: foreign key '{foreign}' and reference key '{reference}' doesn't match in number\n")
+
 class NonExistingColumnDefError(RelationalDBException):
     def __init__(self, col_name):
         super().__init__(f"{self.__class__.__name__}: Create table has failed: '{col_name}' does not exists in column definition\n")
