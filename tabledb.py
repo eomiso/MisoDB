@@ -68,6 +68,23 @@ class RelationDB(object):
                 ]}
             }]
         """
+        table_name = table_definition[PARAM].get(TN)
+        col_defs = [table_elem.get('Col_Def')                       \
+                        for table_elem                              \
+                            in table_definition[PARAM].get('Elem_List')    \
+                                # remove none type
+                                if table_elem.get('Col_Def')]
+        primary_key = [table_elem.get(PRI) \
+                        for table_elem     \
+                          in table_definition[PARAM].get('Elem_list')  \
+                            if table_elem.get(PRI)]
+        foreign_key_defs = [table_elem.get(FOR)                     \
+                             for table_elem                        \
+                                in table_definition[PARAM].get('Elem_List') \
+                                  if table_elem.get(FOR)]
+
+        
+
         parser._queues.append("create_table called\n")
 
     def desc_table(self, table_name):
@@ -77,6 +94,34 @@ class RelationDB(object):
     def show_tables(self):
         parser._queues.append('show_tables called\n')
 
+    def _schema_has_table(self, name):
+        if name in self.schema_list.keys():
+            return True
+        else:
+            return False
+    
+    def _has_single_primary_def(self, table_definition):
+        keys = [next(iter(table_elem))  \
+                    for table_elem in table_definition.get('Elem_List')]
+        counts = collections.Counter(keys)
+        if PRI not in counts.keys() or counts.get(PRI) == 1:
+            return True
+        else:
+            raise DuplicatePrimaryKeyDefError()
+
+    def _has_duplicate_column_name(self, col_def_list):
+        names = [col_def.get(CN) for col_def in col_def_list]
+        if _has_duplicate(names):
+            raise DuplicateColumnDefError()
+
+    def _has_duplicate(self, input_list):
+        if len(set(input_list)) != len(input_list):
+            return True
+        else:
+            return False
+    
+    def _check_reference_type(self, foreign_key)
+
     TN = 'Table_Name'
     COL = 'Columns'
     CN = 'Col_Name'
@@ -84,6 +129,7 @@ class RelationDB(object):
     NONULL ='Not_NULL'
     PRI = 'primary_key'
     FOR = 'foreign_key'
+    PARAM = 'Param'
 
 
 
