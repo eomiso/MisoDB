@@ -94,7 +94,13 @@ class PromptShell:
             self.stdout.flush()
             
             # get input from prompt
-            self.read_line()
+            try:
+                self.read_line()
+            except KeyboardInterrupt:
+                    print("\nKeyboardInterrupt: Closing DB ... ")
+                    self.db.close()
+                    sys.exit(0)
+
             while (len(self.input_queue)!=0):
                 # continue reading line without printing prompt
                 # until there is ";" at the end of input
@@ -104,18 +110,16 @@ class PromptShell:
                     self.query = " ".join(self.input_queue)
                     try:
                         t = self.sql_parser.parse(self.query)
-                        t = self.transformer.transform(t) 
+                        t = self.transformer.transform(t)
+                        for query in t:
+                            # t[QUERY] could_be create_table, desc_table ...)
+                            getattr(self.db, query[COMMAND])(query[PARAM]) 
                     except lark.exceptions.UnexpectedToken as error:
-                        self.error_handler(error.token)    
+                        self.error_handler(error.token)  
+                    except RelationalDBException:
+                        pass
                     
                     # TODO make the methods to compute the database
-
-                    for query in t:
-                        try:
-                            getattr(self.db, query[COMMAND])(query[PARAM]) # t[QUERY] could_be create_table, desc_table ...
-                        except RelationalDBException:
-                            pass
-                    # queues: prompt messages to be printed in order
 
                     while (parser._queues):
                         # print the responses to queries
@@ -128,8 +132,9 @@ class PromptShell:
                     self.flush_query()
                     # foto the prompt printing
                     break
-
-                self.read_line()    
+               
+                self.read_line()  
+                
                 
 
 

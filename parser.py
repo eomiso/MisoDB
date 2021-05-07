@@ -41,7 +41,6 @@ class MyTransformer(Transformer):
         return tree[0]
     # methods for each corresponding queries
     def create_table_query(self, tree):
-        _queues.append(str(tree) + '\n')
         return {'Query': 'create_table', 'Param': {'Table_Name': tree[2], 'Elem_List': tree[3]}}
 
     
@@ -106,22 +105,13 @@ class MyTransformer(Transformer):
                             self.query_types['insert_query']))
 
     def drop_table_query(self, tree):
-        _queues.append(
-                self.fmtstr.format(query_type=
-                            self.query_types['drop_table_query']))
         return {'Query': 'drop_table', 'Param': tree[2]}
 
     def descending_query(self, tree):
-        _queues.append(
-                self.fmtstr.format(query_type=
-                            self.query_types['descending_query']))
         return {'Query': 'desc_table', 'Param': tree[1]}
 
     def show_tables_query(self, tree):
-        _queues.append(
-                self.fmtstr.format(query_type=
-                            self.query_types['show_tables_query']))
-        return {'Query': 'show_tables'}
+        return {'Query': 'show_tables', 'Param': None}
 
     def delete_query(self, tree):
         _queues.append(
