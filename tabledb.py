@@ -10,6 +10,14 @@ You need serialize the objects to use berkeleydb.
 
 _schema_list_key = "__SCHEMA_LIST__" # a key for retrieving table_list
 
+TN = 'Table_Name'
+COL = 'Columns'
+CN = 'Col_Name'
+DT = 'Data_Type'
+NONULL ='Not_NULL'
+PRI = 'primary_key'
+FOR = 'foreign_key'
+
 def _encode_str(input):
     return bytes(input, 'utf-8')
 def _decode_str(output):
@@ -57,8 +65,9 @@ class RelationDB(object):
         """
         Parameter
         ---------
-        table_definition : dict
-            dict from: take a look at 'Param'
+        table_definition
+            dict from the Qeuery dict take a look at 'Param'.
+            table_definition is the value of 'Param'.
             [{'Query': 'create_table', 'Param': {
                 'Table_Name': 'student', 'Elem_List': [
                 {'Col_Def': {'Col_Name': 'student_number', 'Data_Type': 'int'}}, 
@@ -68,22 +77,27 @@ class RelationDB(object):
                 ]}
             }]
         """
-        table_name = table_definition[PARAM].get(TN)
+        #import pdb; pdb.set_trace()
+        table_name = table_definition.get(TN)
         col_defs = [table_elem.get('Col_Def')                       \
                         for table_elem                              \
-                            in table_definition[PARAM].get('Elem_List')    \
+                            in table_definition.get('Elem_List')    \
                                 # remove none type
                                 if table_elem.get('Col_Def')]
         primary_key = [table_elem.get(PRI) \
                         for table_elem     \
-                          in table_definition[PARAM].get('Elem_list')  \
+                          in table_definition.get('Elem_List')  \
                             if table_elem.get(PRI)]
         foreign_key_defs = [table_elem.get(FOR)                     \
                              for table_elem                        \
-                                in table_definition[PARAM].get('Elem_List') \
+                                in table_definition.get('Elem_List') \
                                   if table_elem.get(FOR)]
 
-        
+        self._table_already_exists(table_name)
+        self._has_duplicate_column_name(col_defs)
+        self._has_multiple_primary_key_def(primary_key)
+        self._primary_key_in_col_defs(col_defs, primary_key)
+        self._foreign_key_in_col_defs(col_defs, foreign_key_defs)
 
         parser._queues.append("create_table called\n")
 
@@ -93,6 +107,11 @@ class RelationDB(object):
         parser._queues.append("drop_table called\n")
     def show_tables(self):
         parser._queues.append('show_tables called\n')
+    
+    def _table_already_exists(self, name):
+        if self._schema_has_table(name):
+            parser._queues.append(str(TableExistenceError()))
+            raise TableExistenceError()
 
     def _schema_has_table(self, name):
         if name in self.schema_list.keys():
@@ -100,18 +119,10 @@ class RelationDB(object):
         else:
             return False
     
-    def _has_single_primary_def(self, table_definition):
-        keys = [next(iter(table_elem))  \
-                    for table_elem in table_definition.get('Elem_List')]
-        counts = collections.Counter(keys)
-        if PRI not in counts.keys() or counts.get(PRI) == 1:
-            return True
-        else:
-            raise DuplicatePrimaryKeyDefError()
-
     def _has_duplicate_column_name(self, col_def_list):
         names = [col_def.get(CN) for col_def in col_def_list]
-        if _has_duplicate(names):
+        if self._has_duplicate(names):
+            parser._queues.append(str(DuplicateColumnDefError()))
             raise DuplicateColumnDefError()
 
     def _has_duplicate(self, input_list):
@@ -120,16 +131,41 @@ class RelationDB(object):
         else:
             return False
     
-    def _check_reference_type(self, foreign_key)
+    def _has_multiple_primary_key_def(self, primary_key_list):
+        if len(primary_key_list) > 1:
+            parser._queues.append(str(DuplicatePrimaryKeyDefError()))
+            raise DuplicatePrimaryKeyDefError()
 
-    TN = 'Table_Name'
-    COL = 'Columns'
-    CN = 'Col_Name'
-    DT = 'Data_Type'
-    NONULL ='Not_NULL'
-    PRI = 'primary_key'
-    FOR = 'foreign_key'
-    PARAM = 'Param'
+    def _primary_key_in_col_defs(self, col_def_list, primary_key_list):
+        names = [col_def.get(CN) for col_def in col_def_list]
+        # if there is no primary key definition
+        if len(primary_key_list) == 0:
+            return
+        for key in primary_key_list.pop():
+            if key not in names:
+                parser._queues.append(str(NonExistingColumnDefError(key)))
+                raise NonExistingColumnDefError(key)
+
+    def _foreign_key_in_col_defs(self, col_def_list, foreign_key_list):
+        if len(foreign_key_list) == 0:
+            return
+
+        names = [col_def.get(CN) for col_def in col_def_list]
+        # this would be 2-depth list
+        # foreign_key_def[0] is the list of 
+        # foreign keys in the definition
+        foreign_keys = [foreign_key_def[0] 
+                        for foreign_key_def in foreign_key_list] 
+        for col_names in foreign_keys:
+            for column in col_names:
+                if column not in names:
+                    parser._queues.append(str(NonExistingColumnDefError(column)))
+                    raise NonExistingColumnDefError(column) 
+
+    def _check_reference_type(self, foreign_key):
+        pass
+
+
 
 
 

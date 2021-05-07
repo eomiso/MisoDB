@@ -5,6 +5,7 @@ import lark
 import re
 from tabledb import RelationDB
 from utils import get_index
+from exceptions import *
 
 
 PROMPT="DB_2014-15554> "
@@ -110,8 +111,10 @@ class PromptShell:
                     # TODO make the methods to compute the database
 
                     for query in t:
-                        getattr(self.db, query[COMMAND])(query[PARAM]) # t[QUERY] could_be create_table, desc_table ...
-
+                        try:
+                            getattr(self.db, query[COMMAND])(query[PARAM]) # t[QUERY] could_be create_table, desc_table ...
+                        except RelationalDBException:
+                            pass
                     # queues: prompt messages to be printed in order
 
                     while (parser._queues):
