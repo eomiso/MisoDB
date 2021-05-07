@@ -1,14 +1,18 @@
 import sys
+import parser
 from parser import Parser, MyTransformer
 import lark
 import re
+from tabledb import RelationDB
 from utils import get_index
+from exceptions import *
 
 
 PROMPT="DB_2014-15554> "
 INTRO="Your input should end with ';' to activate the interpreter."
 
-
+COMMAND = 'Query'
+PARAM = 'Param'
 
 class PromptShell:
     """ A shell for a prompt.
@@ -17,6 +21,7 @@ class PromptShell:
     """
     sql_parser = Parser().sql_parser # class Lark from parser.py
     transformer = MyTransformer() # class inheriting Transformer from parser.py
+    db = RelationDB('myDB.db')
 
     def __init__(self):
         """ Instantiate a interpreter framework""" 
@@ -89,7 +94,13 @@ class PromptShell:
             self.stdout.flush()
             
             # get input from prompt
-            self.read_line()
+            try:
+                self.read_line()
+            except KeyboardInterrupt:
+                    print("\nKeyboardInterrupt: Closing DB ... ")
+                    self.db.close()
+                    sys.exit(0)
+
             while (len(self.input_queue)!=0):
                 # continue reading line without printing prompt
                 # until there is ";" at the end of input
@@ -99,26 +110,31 @@ class PromptShell:
                     self.query = " ".join(self.input_queue)
                     try:
                         t = self.sql_parser.parse(self.query)
-                        self.transformer.transform(t) 
+                        t = self.transformer.transform(t)
+                        for query in t:
+                            # t[QUERY] could_be create_table, desc_table ...)
+                            getattr(self.db, query[COMMAND])(query[PARAM]) 
                     except lark.exceptions.UnexpectedToken as error:
-                        self.error_handler(error.token)    
+                        self.error_handler(error.token)  
+                    except RelationalDBException:
+                        pass
                     
-                    # queues: prompt messages to be printed in order
-                    queues = self.transformer.get_queues()
+                    # TODO make the methods to compute the database
 
-                    while (queues):
+                    while (parser._queues):
                         # print the responses to queries
-                        self.stdout.write(queues.pop(0))
+                        self.stdout.write(parser._queues.pop(0))
                         self.stdout.flush
-                        if (queues):
+                        if (parser._queues):
                             self.stdout.write(self.prompt)
 
                     self.stdout.flush()
                     self.flush_query()
                     # foto the prompt printing
                     break
-
-                self.read_line()    
+               
+                self.read_line()  
+                
                 
 
 
