@@ -99,8 +99,13 @@ class RelationDB(object):
         self._primary_key_in_col_defs(col_defs, primary_key)
         self._foreign_key_in_col_defs(col_defs, foreign_key_defs)
 
-        parser._queues.append("create_table called\n")
+        # create table schema
+        # primary_key looks like this [[key1, key2...]]
+        self.schema_list[table_name] = Table(table_name, col_defs, *primary_key, foreign_key_defs)
 
+
+        # save table schema
+        self._db.put(_encode_str(_schema_list_key), _encode_pickle(self.schema_list))
     def desc_table(self, table_name):
         parser._queues.append("desc_table called\n")
     def drop_table(self, table_name):
@@ -171,7 +176,7 @@ class RelationDB(object):
 
 
     class Table(collections.UserDict):
-        def __init__(self, name, columns, primary_keys, prime_keys, foreign_keys):
+        def __init__(self, name, columns, primary_keys, foreign_keys):
             """
             Parameter
             ---------
@@ -200,10 +205,35 @@ class RelationDB(object):
         def setter(self, name, columns, primary_keys, foreign_keys):
             self[TN] = name
             self[PRI] = primary_keys
+            
+            
             #foreign keys [([foreign_keys], table, [ref_keys])]
-            self[FOR] = {}
+            self[FOR] = dict()
+            for foreign_key_def in foreign_keys:
+                #(foreign_key1, foreign_key2) = (ref_table, (ref column1, ref column2))
+                self[FOR][tuple(foreign_key_def[0])] = tuple([foreign_key_def[1], tuple(foreign_key_def[2])])
             #TODO
-            pass
+            self[COL] = []
+            for col_def in columns:
+                col_name = col_def.get(CN)
+                data_type = DataType(col_def.get(DT))
+                if col_name in primary_keys:
+                    prime = True
+                else:
+                    prime = False
+                
+                foreign = None
+                for k, (table, v) in zip(self[FOR].keys(), self[FOR].values()):
+                    if len(k) != len(v):
+                        parse._queues.append(str(ForeignKeyandReferenceKeyNumMatchError(k,v)))
+                        raise ForeignKeyandReferenceKeyNumMatchError(k,v)
+                        
+                    if col_name in k:
+                        i = k.index(col_name)
+                        foreign = table, v[i]
+                self[COL].append(Column(col_name, data_type, prime, foreign))
+
+
     
     class Column(collections.UserDict):
         def __init__(self, name, data_type, not_null, prime, foreign):
@@ -227,3 +257,29 @@ class RelationDB(object):
             #TODO
             pass
         
+    class DataType():
+        def __init__(self, type_str):
+            self.setter(type_str)
+
+        def setter(self, type_str):
+            if type_str == 'int':
+                self.type = 'int'
+            else if type_str == 'date'
+                self.type = 'date'
+            else
+                self.type = 'char'
+                self.len  = int(type_str.replace('char', '').replace('(', '').replace(')',''))
+                if self.len < 1:
+                    parser._queues.append(CharLengthError())
+                    raise CharLengthError()
+
+        def get_type(self):
+            return self.type
+
+        def __str__(self):
+            if self.type = 'int':
+                return self.type
+            else if self.type = 'date':
+                return self.type
+            else
+                return self.type + '(' + str(self.len) + ')'
