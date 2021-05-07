@@ -90,10 +90,10 @@ class MyTransformer(Transformer):
         return ret
     
     def table_name(self, tree):
-        return tree[0].value
+        return tree[0].value.lower()
 
     def column_name(self, tree):
-        return tree[0].value
+        return tree[0].value.lower()
 
     def select_query(self, tree):
         _queues.append(

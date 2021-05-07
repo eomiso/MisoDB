@@ -103,9 +103,12 @@ class RelationDB(object):
         # primary_key looks like this [[key1, key2...]]
         self.schema_list[table_name] = Table(table_name, col_defs, *primary_key, foreign_key_defs)
 
-
         # save table schema
         self._db.put(_encode_str(_schema_list_key), _encode_pickle(self.schema_list))
+
+        # add queue
+        parser._queues(CreateTableSuccess(table_name))
+
     def desc_table(self, table_name):
         parser._queues.append("desc_table called\n")
     def drop_table(self, table_name):
@@ -167,13 +170,6 @@ class RelationDB(object):
                     parser._queues.append(str(NonExistingColumnDefError(column)))
                     raise NonExistingColumnDefError(column) 
 
-    def _check_reference_type(self, foreign_key):
-        pass
-
-
-
-
-
 
     class Table(collections.UserDict):
         def __init__(self, name, columns, primary_keys, foreign_keys):
@@ -209,11 +205,14 @@ class RelationDB(object):
             
             #foreign keys [([foreign_keys], table, [ref_keys])]
             self[FOR] = dict()
+            self['RefTable'] = set() # a set that contains all the reftables
+            
             for foreign_key_def in foreign_keys:
                 #(foreign_key1, foreign_key2) = (ref_table, (ref column1, ref column2))
                 self[FOR][tuple(foreign_key_def[0])] = tuple([foreign_key_def[1], tuple(foreign_key_def[2])])
-            #TODO
-            self[COL] = []
+                self['RefTable'].add(foreign_key_def[1])
+            
+            self[COL] = {}
             for col_def in columns:
                 col_name = col_def.get(CN)
                 data_type = DataType(col_def.get(DT))
@@ -222,16 +221,20 @@ class RelationDB(object):
                 else:
                     prime = False
                 
+                if col_def.get(NONULL):
+                    not_null = True
+                else:
+                    not_null = False
+
                 foreign = None
                 for k, (table, v) in zip(self[FOR].keys(), self[FOR].values()):
                     if len(k) != len(v):
                         parse._queues.append(str(ForeignKeyandReferenceKeyNumMatchError(k,v)))
                         raise ForeignKeyandReferenceKeyNumMatchError(k,v)
-                        
                     if col_name in k:
                         i = k.index(col_name)
                         foreign = table, v[i]
-                self[COL].append(Column(col_name, data_type, prime, foreign))
+                self[COL][col_name] = Column(col_name, data_type, not_null, prime, foreign)
 
 
     
@@ -242,7 +245,7 @@ class RelationDB(object):
             ---------
             name : string
                 column name
-            data_type : string
+            data_type : DataType ()
                 could be one of int, char(int), date
             not_null : bool
                 whether this column could be null
@@ -255,18 +258,47 @@ class RelationDB(object):
         
         def setter(self, name, data_type, not_null, prime, foreign):
             #TODO
-            pass
+            self[CN] = name
+            self[DT] = data_type
+            self[NONULL] = not_null
+            self[PRI] = prime
+            self._check_refrence_constraint(foreign)
+            self[FOR] = foreign
+
+        def _check_refrence_constraint(reference):
+            """
+            Parameter
+            ---------
+            reference : tuple
+                None | (table_name, ref column)
+            """
+            if not foreign: #if foreign is None
+                return
+            ref_table, ref_column = reference
+            
+            ref_table = self.schema_list.get(ref_table)
+            if not ref_table:
+                raise ReferenceTableExistenceError()
+
+            ref_column = ref_table[COL].get(ref_column)
+            if not ref_column:
+                raise ReferenceColumnExistenceError()
+            if not (self[DT] == ref_column[DT]):
+                raise ReferenceTypeError()
+            if not ref_column[PRI]:
+                raise ReferenceNonPrimaryKeyError()
+
         
-    class DataType():
+    class DataType(object):
         def __init__(self, type_str):
             self.setter(type_str)
 
         def setter(self, type_str):
             if type_str == 'int':
                 self.type = 'int'
-            else if type_str == 'date'
+            elif type_str == 'date':
                 self.type = 'date'
-            else
+            else:
                 self.type = 'char'
                 self.len  = int(type_str.replace('char', '').replace('(', '').replace(')',''))
                 if self.len < 1:
@@ -275,11 +307,17 @@ class RelationDB(object):
 
         def get_type(self):
             return self.type
+        def __eq__(self, other):
+            if isinstance(other, DataType):
+                if self.type == 'char':
+                    return self.type == other.type and self.len == other.len
+                else:
+                    return self.type == other.type
 
         def __str__(self):
-            if self.type = 'int':
+            if self.type == 'int':
                 return self.type
-            else if self.type = 'date':
+            elif self.type == 'date':
                 return self.type
-            else
+            else:
                 return self.type + '(' + str(self.len) + ')'

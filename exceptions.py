@@ -57,3 +57,7 @@ class NoSuchTable(RelationalDBException):
 class CharLengthError(RelationalDBException):
     def __init__(self):
         super().__init__(f"{self.__class__.__name__}: Char length should be over 0\n")
+
+class ReferenceSameTableError(RelationalDBException):
+    def __init__(self):
+        super().__init__(f"{self.__class__.__name__}: Referencing the table that is containing the foreign key\n")
