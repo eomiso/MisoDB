@@ -242,6 +242,8 @@ class RelationDB(object):
                 self[REFTAB].add(foreign_key_def[1])
             
             self[COL] = {}
+            # to get the columns of a table you can do
+            # <table>[COL].get_keys()
             for col_def in columns:
                 col_name = col_def.get(CN)
                 data_type = self.DataType(col_def.get(DT))
@@ -264,6 +266,9 @@ class RelationDB(object):
                         i = k.index(col_name)
                         foreign = table, v[i]
                 self[COL][col_name] = self.Column(schema, col_name, data_type, not_null, prime, foreign)
+        
+        def get_colum_names(self):
+            return list(self[COL].keys())
 
         def __str__(self):
             ret = f""" 
@@ -301,10 +306,10 @@ class RelationDB(object):
                 self[DT] = data_type
                 self[NONULL] = not_null
                 self[PRI] = prime
-                self._check_refrence_constraint(schema, foreign)
+                self._check_reference_constraint(schema, foreign)
                 self[FOR] = foreign
 
-            def _check_refrence_constraint(self, schema, reference):
+            def _check_reference_constraint(self, schema, reference):
                 """
                 Parameter
                 ---------

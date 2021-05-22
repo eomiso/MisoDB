@@ -113,6 +113,7 @@ class PromptShell:
                         t = self.transformer.transform(t)
                         for query in t:
                             # t[QUERY] could_be create_table, desc_table ...)
+                            print(query)
                             getattr(self.db, query[COMMAND])(query[PARAM]) 
                     except lark.exceptions.UnexpectedToken as error:
                         self.error_handler(error.token)  

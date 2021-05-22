@@ -98,11 +98,31 @@ class MyTransformer(Transformer):
         _queues.append(
                 self.fmtstr.format(query_type=
                             self.query_types['select_query']))
-
+    def NULL(self, tree):
+        return None
+    def comparable_value(self, tree):
+        if tree[0].type == 'INT':
+            return int(tree[0].value)
+        elif tree[0].type == 'STR':
+            return tree[0].value.strip('\'')
+        else:
+            return "WRONG"
+    def value(self, tree):
+        return tree[0]
+    def value_list(self, tree):
+        return tree[2:-1]
+    def insert_columns_and_sources(self, tree):
+        if len(tree) == 2:
+            # [Token('INSERT', 'INSERT'), Token('INTO', 'INTO'), 'account', [['account_name'], [123, 'sillim', None]]]
+            return tree
+        else:
+            # [Token('INSERT', 'INSERT'), Token('INTO', 'INTO'), 'account', [None, [123, 'name', None]]]
+            return [None] + tree
+            
     def insert_query(self, tree):
-        _queues.append(
-                self.fmtstr.format(query_type=
-                            self.query_types['insert_query']))
+        print(tree)
+        # {'Query': 'insert_query', 'Param': {'Table_Name': 'account', 'Columns': [None, [123, 'name', None]], 'Val_List': [None, [123, 'name', None]]}}
+        return {'Query': 'insert_query', 'Param': {'Table_Name': tree[2], 'Columns':tree[3][0] ,'Val_List': tree[3][1]}}
 
     def drop_table_query(self, tree):
         return {'Query': 'drop_table', 'Param': tree[2]}
