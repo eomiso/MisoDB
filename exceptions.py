@@ -61,3 +61,26 @@ class CharLengthError(RelationalDBException):
 class ReferenceSameTableError(RelationalDBException):
     def __init__(self):
         super().__init__(f"{self.__class__.__name__}: Referencing the table that is containing the foreign key\n")
+
+class InsertionError(RelationalDBException):
+    pass
+
+class InsertTypeMismatchError(InsertionError):
+    def __init__(self):
+        super().__init__("Insertion has failed: Types not matched\n")
+
+class InsertColumnNonNullableError(InsertionError):
+    def __init__(self, col_name):
+        super().__init__(f"Insertion has failed: '{col_name}' is not nullable\n")
+
+class InsertColumnExistenceError(InsertionError):
+    def __init__(self, col_name):
+        super().__init__(f"Insertion has failed: '{col_name}' does not exist\n")
+
+class InsertDuplicatePrimaryKeyError(InsertionError):
+    def __init__(self):
+        super().__init__(f"Insertion has failed: Primary Key duplication\n")
+
+class InsertReferentialIntegrityError(InsertionError):
+    def __init__(self):
+        super().__init__(f"Insertion has failed: Referential integrity violation\n")

@@ -59,7 +59,7 @@ class MyTransformer(Transformer):
         ret = {'Col_Name': tree[0],
                'Data_Type': tree[1]}
         if len(tree) == 4 : # means that it has not null option
-            if tree[-2].value +" "+ tree[-1].value == "not null":
+            if tree[-2].value +" "+ tree[-1] == "not null":
                 # just in case for other options to come
                 ret['Not_Null'] = True
         return ret
@@ -98,8 +98,8 @@ class MyTransformer(Transformer):
         _queues.append(
                 self.fmtstr.format(query_type=
                             self.query_types['select_query']))
-    def NULL(self, tree):
-        return None
+    def NULL(self, item):
+        return item.value.lower()
     def comparable_value(self, tree):
         if tree[0].type == 'INT':
             return int(tree[0].value)
@@ -120,7 +120,6 @@ class MyTransformer(Transformer):
             return [None] + tree
             
     def insert_query(self, tree):
-        print(tree)
         # {'Query': 'insert_query', 'Param': {'Table_Name': 'account', 'Columns': [None, [123, 'name', None]], 'Val_List': [None, [123, 'name', None]]}}
         return {'Query': 'insert_query', 'Param': {'Table_Name': tree[2], 'Columns':tree[3][0] ,'Val_List': tree[3][1]}}
 
@@ -132,8 +131,63 @@ class MyTransformer(Transformer):
 
     def show_tables_query(self, tree):
         return {'Query': 'show_tables', 'Param': None}
+    def OR(self, item):
+        return item.value.lower()
+    def AND(self, item):
+        return item.value.lower()
+    def NOT(self, item):
+        return item.value.lower()
 
+    def COMP_OP(self, item):
+        if item.value == '=':
+            return '=='
+        else:
+            return item.value
+    def parenthesized_boolean_expr(self, items):
+        return tuple(items[1])
+    def boolean_expr(self, items):
+        if len(items) == 1:
+            return items[0]
+        return (items[1], items[0], items[2])
+    def boolean_term(self, items):
+        if len(items) == 1:
+            return items[0]
+        return (items[1], items[0], items[2])
+    def boolean_factor(self, items):
+        if len(items) == 1:
+            return items[0]
+        return (items[0], items[1])
+    def boolean_test(self, item):
+        return item[0]
+    def predicate(self, item):
+        return item[0]
+    def comparison_predicate(self, tree):
+        return (tree[0],tree[1],tree[2])
+    def comp_operand(self, item):
+        if len(item)==1:
+            return item[0]
+        else:
+            return (item[0], item[1])
+    def null_predicate(self, items):
+        if len(items) == 3:
+            return ((items[0], items[1]),items[2])
+        return tuple(items)
+    def null_operation(self, items):
+        num = len(items)
+        res = items[0].lower()
+        for i in range(num-1):
+            res += (' '+items[i+1])
+        return res
+
+    def table_reference_list(self, items):
+        return items
+    def referred_table(self, items):
+        if len(items) == 1:
+            return items[0]
+        else:
+            return (items[0], items[2])
     def delete_query(self, tree):
+        print(tree)
         _queues.append(
                 self.fmtstr.format(query_type=
                             self.query_types['delete_query']))

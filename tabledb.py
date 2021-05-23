@@ -10,6 +10,7 @@ You need serialize the objects to use berkeleydb.
 """
 
 _schema_list_key = "__SCHEMA_LIST__" # a key for retrieving table_list
+_record_list_key = ".__DATA__"
 
 TN = 'Table_Name'
 COL = 'Columns'
@@ -19,6 +20,9 @@ NONULL ='Not_NULL'
 PRI = 'primary_key'
 FOR = 'foreign_key'
 REFTAB = 'RefTables'
+REC = 'Data'
+COL_LIST = 'Column_List'
+
 
 def _encode_str(input):
     return bytes(input, 'utf-8')
@@ -104,7 +108,8 @@ class RelationDB(object):
         # create table schema
         # primary_key looks like this [[key1, key2...]]
         #import pdb; pdb.set_trace()
-        self.schema_list[table_name] = self.Table(self.schema_list, table_name, col_defs, primary_key, foreign_key_defs)
+        self.schema_list[table_name] = self.Table(self.schema_list, \
+                        table_name, col_defs, primary_key, foreign_key_defs)
 
         # save table schema
         self._db.put(_encode_str(_schema_list_key), _encode_pickle(self.schema_list))
@@ -142,6 +147,29 @@ class RelationDB(object):
         ret += "----------------\n"
         parser._queues.append(ret)
     
+    def insert_query(self, param):
+        # INSERT INTO account VALUES(123, 'Hello', NULL)
+        # {'Query': 'insert_query', 'Param': {'Table_Name': 'account', 'Columns': None, 'Val_List': [123, 'Hello', 'NULL']}}
+        table_name = param[TN]
+        if table_name not in self.schema_list.keys():
+            parser._queues.append(str(NoSuchTable))
+            raise NoSuchTable()
+
+        serial_reclist_obj = self._db.get(_encode_str(param[TN]+_record_list_key))
+
+        if serial_reclist_obj == None:
+            records = Records(table_name,  
+                    self.schema_list[table_name][PRI], 
+                    self.schema_list[table_name][FOR], 
+                    self.schema_list[table_name][COL],
+                    self.schema_list[table_name].get_column_names())
+        else:
+            records = _decode_pickle(serial_reclist_obj)
+
+        records.add_record(param['Columns'],param['Val_List'])
+        parser._queues.append("The row is inserted\n")
+        self._db.put(_encode_str(table_name+_record_list_key), _encode_pickle(records))
+
     def _table_already_exists(self, name):
         if self._schema_has_table(name):
             parser._queues.append(str(TableExistenceError()))
@@ -260,14 +288,14 @@ class RelationDB(object):
                 foreign = None
                 for k, (table, v) in zip(self[FOR].keys(), self[FOR].values()):
                     if len(k) != len(v):
-                        parse._queues.append(str(ReferenceTypeError()))
+                        parser._queues.append(str(ReferenceTypeError()))
                         raise ReferenceTypeError()
                     if col_name in k:
                         i = k.index(col_name)
                         foreign = table, v[i]
                 self[COL][col_name] = self.Column(schema, col_name, data_type, not_null, prime, foreign)
         
-        def get_colum_names(self):
+        def get_column_names(self):
             return list(self[COL].keys())
 
         def __str__(self):
@@ -393,3 +421,129 @@ class RelationDB(object):
                     return self.type
                 else:
                     return self.type + '(' + str(self.len) + ')'
+
+class Records(collections.UserDict): 
+    """
+    This class can be accessed by "<table_name>.__data__."
+    Attributes
+    ---------
+    Records[TN] : string
+        table name of the record
+    Records[DATA] : list: dict
+        [
+            {col1 : val1, col2 : val2, col3 : val3 ...},
+            {col1 : val1, col2 : val2, col3 : val3 ...},
+        ]
+    Records[PRI] : list: column_names
+        from table[PRI]
+    Records[FOR] : dict
+        {tuple(foreign_key_def[0]) : (foreign_key_def[1], tuple(foreign_key_def[2]) }
+        {(foreign_key1, foreign_key2) : (ref_table, (ref column1, ref column2))}
+    Records[REFTAB] : list
+        [ref_table1, ref_table2]
+    """
+    def __init__(self, table_name, pk_list, fk_list, col_dict, colname_list):
+        super().__init__(self)
+        self[TN] = table_name
+        self[REC] = []
+        self[PRI] = pk_list
+        self[FOR] = fk_list
+        self[COL] = col_dict
+        self[COL_LIST] = colname_list
+
+    def get_records_with_column(self, args:list) -> list :
+        """
+        args : [col1, col2, col3]
+        returns
+        -------
+            {col1:[items], col2:[items], col3:[items]}
+        """
+        ret = {} # initialize
+        for column in args:
+            ret[column] = []
+
+        for rec in self[REC]:
+            for column in args:
+                ret[column].append(rec[column])
+        return ret
+
+
+
+    def add_record(self, columns:list, vals:list) -> bool:
+        rec = {}
+        # initialize the input record to None
+        for column in self[COL_LIST]:
+            rec[column] = None
+        
+        # check for the number of vals
+        if columns == None: 
+            if len(vals) != len(self[COL_LIST]):
+                parser._queues.append(str(InsertTypeMismatchError()))
+                raise InsertTypeMismatchError()
+            else:
+                for i, (k, _) in enumerate(rec.items()):
+                    rec[k] = (vals[i] if vals[i] != 'NULL' else None)
+        
+        # check for type error, primary constraint, foreign key constraints
+        for k, v in rec.items():
+            # Column existence check
+            if k not in self[COL_LIST]:
+                parser._queues.append(str(InsertColumnExistenceError(k)))
+                raise InsertColumnExistenceError(k)
+
+            # Nullity check
+            if v ==None:
+                if self[COL][k][NONULL]:
+                    parser._queues.append(str(InsertColumnNonNullableError(k)))
+                    raise InsertColumnNonNullableError(k)
+
+            # type error check
+            if self[COL][k][DT].type == 'int':
+                if type(v) == int:
+                    pass
+                else:
+                    parser._queues.append(str(InsertTypeMismatchError()))
+                    raise InsertTypeMismatchError()
+            elif self[COL][k][DT].type == 'char':
+                if type(v) == str:
+                    if len(v) > self[COL][k][DT].len:
+                        parser._queues.append(str(InsertTypeMismatchError()))
+                        raise InsertTypeMismatchError()
+                    else:
+                        pass
+                else:
+                    parser._queues.append(str(InsertTypeMismatchError()))
+                    raise InsertTypeMismatchError()
+            else: #date
+                pass
+
+            # primary constraint check
+            if k in self[PRI]:
+                primary_recs = self.get_records_with_column(self[PRI])
+                # if already in
+                if v in primary_recs[k]:
+                    parser._queues.append(str(InsertDuplicatePrimaryKeyError()))
+                    raise InsertDuplicatePrimaryKeyError()
+
+            # foreign constraint check
+            # if self[COL][k][FOR] not none
+            if self[COL][k][FOR]:
+                # self[COL][k][FOR][0] : table name of the ref_table
+                # self[COL][k][FOR][1] : column name of the ref column
+                ref_table_name = self[COL][k][FOR][0]
+                ref_col_name = self[COL][k][FOR][1]
+                serial_obj =  \
+                    self._db.get(_encode_str(ref_table_name + _record_list_key))
+                if serial_obj == None:
+                    parser._queues.append(str(InsertReferentialIntegrityError()))
+                    raise InsertReferentialIntegrityError()
+                else:
+                    ref_records = _decode_pickle(serial_obj)
+                    ref_recs = ref_records.get_records_with_column([ref_col_name])
+                    if v not in ref_recs[ref_col_name]:
+                        parser._queues.append(str(InsertReferentialIntegrityError()))
+                        raise InsertReferentialIntegrityError()
+
+        self[REC].append(rec)
+
+
