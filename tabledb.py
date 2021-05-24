@@ -132,8 +132,9 @@ class RelationDB(object):
             if table_name in table[REFTAB]:
                 parser._queues.append(str(DropReferencedTableError(table_name)))
                 raise DropReferencedTableError(table_name)
-        res = self.schema_list.pop(table_name)
-        if res == None:
+        try:
+            res = self.schema_list.pop(table_name)
+        except KeyError:
             parser._queues.append(str(NoSuchTable()))
             raise NoSuchTable()
         
