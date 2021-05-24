@@ -44,3 +44,25 @@ class RecordsTestCase(unittest.TestCase):
                 'col2':["David", "YoungA"]})
     def test_add_record(self):
         self.assertFalse(add_record({'col1': '1235'}))
+
+
+
+def _where_condition(param:tuple):
+    ret = ""
+    for expr in param:
+        if type(expr) != tuple:
+            ret += _wrapper(expr) 
+        else:
+            ret += ( '(' + _where_condition(expr) +')')
+    return ret
+
+STRINGS = ['and', 'or', 'not', '==', '>=', '<=', '<', '>', '!=', 'is null', 'is not null']
+def _wrapper(expr):
+    if type(expr) == int:
+        return str(expr)
+    elif expr not in STRINGS:
+        return '\'' + expr + '\''
+    else:
+        return ' '+ expr+' '
+        
+a = (('borrower.branch_name', 'is not null'), 'and', ('branch_name', '==', 'hello'), 'and', ('not', ('branch_num', '==', 123)))

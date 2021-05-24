@@ -84,3 +84,28 @@ class InsertDuplicatePrimaryKeyError(InsertionError):
 class InsertReferentialIntegrityError(InsertionError):
     def __init__(self):
         super().__init__(f"Insertion has failed: Referential integrity violation\n")
+
+class DeletionError(RelationalDBException):
+    pass
+
+class DeleteResult(DeletionError):
+    def __init__(self, count):
+        super().__init__(f"{count} row(s) are deleted\n")
+class DeleteReferentialIntegrityPassed(DeletionError):
+    def __init__(self, count):
+        super().__init__(f"{count} row(s) are not deleted due to referential integrity\n")
+
+class WhereError(RelationalDBException):
+    pass
+
+class WhereIncomparableError(WhereError):
+    def __init__(self):
+        super().__init__("Where clause try to compare incomparable values\n")
+
+class WhereTableNotSpecified(WhereError):
+    def __init__(self):
+        super().__init__("Where clause try to reference tables which are not specified\n")
+
+class WhereColumnNotExist(WhereError):
+    def __init__(self):
+        super().__init__("Where clause try to reference non existing column\n")

@@ -3,6 +3,8 @@ import parser
 from exceptions import *
 import collections
 import pickle
+import copy
+import re
 
 """
 Reserved Keys and methods.
@@ -23,6 +25,10 @@ REFTAB = 'RefTables'
 REC = 'Data'
 COL_LIST = 'Column_List'
 
+STRINGS = ['and', 'or', 'not', '==', '>=', '<=', '<', '>', '!=', 'is null', 'is not null']
+
+null = None
+
 
 def _encode_str(input):
     return bytes(input, 'utf-8')
@@ -32,6 +38,15 @@ def _encode_pickle(input):
     return pickle.dumps(input)
 def _decode_pickle(output):
     return pickle.loads(output)
+
+def _get_recs_with_table_name(self, table_name:str):
+    # returns Records with table_name
+    serial_obj = \
+        self._db.get(_encode_str(table_name+_record_list_key))
+    if serial_obj == None:
+        return False
+    else:
+        return _decode_pickle(serial_obj)
 
 class RelationDB(object):
     """
@@ -170,6 +185,127 @@ class RelationDB(object):
         records.add_record(param['Columns'],param['Val_List'])
         parser._queues.append("The row is inserted\n")
         self._db.put(_encode_str(table_name+_record_list_key), _encode_pickle(records))
+
+    def delete_query(self, param):
+        # delete from account as A, sunny
+        # where borrower.branch_name is not null
+        # and branch_name = 'hello'
+        # and branch_num = 123;
+        # {'Query': 'delete_query', 'Param': {'From': [('account', 'as', 'a'), 'sunny'], 
+        # 'Where': ((('borrower', '.', 'branch_name'), 'is not null'), 'and', ('branch_name', '==', 'hello'))}}
+        
+        aliases ={}
+
+    # check the tables existence
+        # table_name from from_clause
+        from_table = param['From'][0]
+        if type(from_table) == tuple:
+            if from_table[0] not in self.schema_list.keys():
+                parser._queues.append(str(NoSuchTable()))
+                raise NoSuchTable()
+            aliases[from_table[2]] = from_table[0]
+            from_table = from_table[0]
+        else:
+            if from_table not in self.schema_list.keys():
+                parser._queues.append(str(NoSuchTable()))
+                raise NoSuchTable()
+        
+        # get the records to be deleted
+        serial_obj = self._db.get(_encode_str(from_table + _record_list_key))
+        
+        if serial_obj == None: # empty table
+            parser._queues.append(str(DeleteResult(0)))
+            raise DeleteResult(0)
+        else:
+            records = _decode_pickle(serial_obj) 
+        
+        records_to_be_deleted = copy.deepcopy(records)
+
+        condition_string = self._where_condition(param['Where'])
+        import re
+        # when refactoring make sure than column_name is specified in the parser
+        substitude_pairs = [] # list of tuples
+
+        # check if the tables and columns referenced in the where clause are referencible
+        # if referencible add to the substitude_pairs
+        innermost_parenthesis = re.findall(r"(\([^\(]*?\))", condition_string)
+        for expr in innermost_parenthesis:
+            table_column_names = re.findall(r"\'(.*?)\'", expr)
+            flag_cnt = 0
+            for name in table_column_names:
+                if '.' in name:
+                    if name.split('.')[0] != from_table:
+                        parser._queue.append(str(WhereTableNotSpecified()))
+                        raise WhereTableNotSpecified()
+                    if name.split('.')[1] not in self.schema_list[from_table].get_column_names():
+                        parser._queue.append(str(WhereColumnNotExist()))
+                        raise WhereColumnNotExist()
+                    substitude_pairs.append(("\'"+name+"\'", 'record['+name.split('.')[1]+']'))
+                    flag_cnt+=1
+                else:
+                    if name in self.schema_list[from_table].get_column_names():
+                        substitude_pairs.append((name, 'record['+name+']'))
+                        flag_cnt+=1
+            if flag_cnt == 0: # if none of the operands are in the column
+                parser._queue.append(str(WhereColumnNotExist()))
+                raise WhereColumnNotExist()
+
+
+        for sub, sub_target in substitude_pairs:
+            condition_string = condition_string.replace(sub, sub_target)
+        
+        for i, record in enumerate(records_to_be_deleted[REC]):
+            try:
+                if eval(condition_string) == False:
+                    records_to_be_deleted[REC].pop(i)
+            except TypeError:
+                parser._queue.append(str(WhereIncomparableError()))
+                raise WhereIncomparableError()
+    
+    # check referential constraints
+        # get [((referencing table, referencing column), (reference table, reference column) )]
+        reference_tuples = []
+        for from_table in from_tables:
+            if from_table in aliases.keys():
+                from_table = aliases[from_table]
+            
+            for table_name in self.schema_list.keys():
+                if from_table in self.schema_list[table_name][REFTAB]:
+                    referencing_table = table_name
+                    reference_table = from_table
+                    for column in self.schema_list[referencing_table][COL]:
+                        if column[FOR] is not None:
+                            if column[FOR][0] == reference_table:
+                                referencing_column = column[TN]
+                                reference_column = column[FOR][1]
+                    
+                    reference_tuples.append((
+                                        (referencing_table, referencing_column),
+                                        (reference_table, reference_column))
+                                    )
+        # check if the entries to be deleted are in the referencing column
+
+    def select_query(self, param):
+        #TODO: needs refactoring to whole code
+        pass
+    
+
+    def _where_condition(self, param:tuple):
+        ret = ""
+        for expr in param:
+            if type(expr) != tuple:
+                ret += self._wrapper(expr) 
+            else:
+                ret += ( '(' + self._where_condition(expr) +')')
+        return ret
+
+    def _wrapper(self, expr):
+        if type(expr) == int:
+            return str(expr)
+        elif expr not in STRINGS:
+            return '\'' + expr + '\''
+        else:
+            return ' ' + expr + ' '
 
     def _table_already_exists(self, name):
         if self._schema_has_table(name):
@@ -546,5 +682,4 @@ class Records(collections.UserDict):
                         raise InsertReferentialIntegrityError()
 
         self[REC].append(rec)
-
 

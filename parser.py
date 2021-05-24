@@ -148,11 +148,11 @@ class MyTransformer(Transformer):
     def boolean_expr(self, items):
         if len(items) == 1:
             return items[0]
-        return (items[1], items[0], items[2])
+        return tuple(items)
     def boolean_term(self, items):
         if len(items) == 1:
             return items[0]
-        return (items[1], items[0], items[2])
+        return tuple(items)
     def boolean_factor(self, items):
         if len(items) == 1:
             return items[0]
@@ -167,10 +167,10 @@ class MyTransformer(Transformer):
         if len(item)==1:
             return item[0]
         else:
-            return (item[0], item[1])
+            return item[0]+'.'+item[1]
     def null_predicate(self, items):
         if len(items) == 3:
-            return ((items[0], items[1]),items[2])
+            return (items[0]+'.'+items[1],items[2])
         return tuple(items)
     def null_operation(self, items):
         num = len(items)
@@ -178,16 +178,21 @@ class MyTransformer(Transformer):
         for i in range(num-1):
             res += (' '+items[i+1])
         return res
-
+    def from_clause(self, tree):
+        return tree[1]
+    def where_clause(self, tree):
+        print(tree[1])
+        return tree[1]
     def table_reference_list(self, items):
         return items
     def referred_table(self, items):
         if len(items) == 1:
             return items[0]
         else:
-            return (items[0], items[2])
+            return (items[0],'as', items[2])
     def delete_query(self, tree):
         print(tree)
+        return {'Query': 'delete_query', 'Param': {'From': tree[1], 'Where': tree[2]} }
         _queues.append(
                 self.fmtstr.format(query_type=
                             self.query_types['delete_query']))
