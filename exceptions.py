@@ -1,6 +1,5 @@
 class SimpleDatabaseError(Exception):
-    def __init__(self, messages):
-        super().__init__(messages)
+    pass
 
 class CreateTableError(SimpleDatabaseError):
     def __init__(self, msg):
@@ -45,61 +44,57 @@ class SelectColumnResolveError(SelectError):
 
 class DuplicateColumnDefError(CreateTableError):
     def __init__(self):
-        super().__init__(f"{self.__class__.__name__}: Create table has failed: column definition is duplicated\n")
+        super().__init__("column definition is duplicated")
 
 class DuplicatePrimaryKeyDefError(CreateTableError):
     def __init__(self):
-        super().__init__(f"{self.__class__.__name__}: Create table has failed: primary key definition is duplicated\n")
+        super().__init__("primary key definition is duplicated")
 
 class ReferenceTypeError(CreateTableError):
     def __init__(self):
-        super().__init__(f"{self.__class__.__name__}: Create table has failed: foreign key references wrong type\n")
+        super().__init__("foreign key references wrong type")
 
 class ReferenceNonPrimaryKeyError(CreateTableError):
     def __init__(self):
-        super().__init__(f"{self.__class__.__name__}: Create table has failed: foreign key references non primary key column\n")
+        super().__init__("foreign key references non primary key column")
 
 class ReferenceColumnExistenceError(CreateTableError):
     def __init__(self):
-        super().__init__(f"{self.__class__.__name__}: Create table has failed: foreign key references non existing column\n")
+        super().__init__("foreign key references non existing column")
 
 class ReferenceTableExistenceError(CreateTableError):
     def __init__(self):
-        super().__init__(f"{self.__class__.__name__}:  Create table has failed: foreign key references non existing table\n")
-
-class ForeignKeyandReferenceKeyNumMatchError(CreateTableError):
-    def __init__(self, foreign, reference):
-        super().__init__(f"{self.__class__.__name__}: Create table has failed: foreign key '{foreign}' and reference key '{reference}' doesn't match in number\n")
+        super().__init__("foreign key references non existing table")
 
 class NonExistingColumnDefError(CreateTableError):
     def __init__(self, col_name):
-        super().__init__(f"{self.__class__.__name__}: Create table has failed: '{col_name}' does not exists in column definition\n")
+        super().__init__(f"'{col_name}' does not exists in column definition")
 
-class TableExistenceError(CreateTableError):
+class TableExistenceError(SimpleDatabaseError):
     def __init__(self):
-        super().__init__(f"{self.__class__.__name__}: Create table has failed: table with the same name already exists\n")
+        super().__init__("table with the same name already exists")
 
-class DropSuccess(CreateTableError):
+class DropSuccess(SimpleDatabaseError):
     def __init__(self, table_name):
         super().__init__(f"{self.__class__.__name__}: '{table_name}' table is dropped\n")
 
-class DropReferencedTableError(CreateTableError):
+class DropReferencedTableError(DropTableError):
     def __init__(self, table_name):
-        super().__init__(f"{self.__class__.__name__}: Drop table has failed: '{table_name}' is referenced by other table\n") 
+        super().__init__(f"'{table_name}' is referenced by other table") 
 
-class NoSuchTable(CreateTableError):
-    def __init__(self):
-        super().__init__(f"{self.__class__.__name__}: No such table\n")
+class NoSuchTable(SimpleDatabaseError):
+    def __str__(self):
+        return "No such table"
 
-class CharLengthError(CreateTableError):
+class CharLengthError(SimpleDatabaseError):
     def __str__(self):
         return "Char length should be over 0"
 
-class ReferenceSameTableError(CreateTableError):
+class ReferenceSameTableError(SimpleDatabaseError):
     def __init__(self):
         super().__init__(f"{self.__class__.__name__}: Referencing the table that is containing the foreign key\n")
 
-class InsertionError(CreateTableError):
+class InsertionError(SimpleDatabaseError):
     pass
 
 class InsertTypeMismatchError(InsertionError):

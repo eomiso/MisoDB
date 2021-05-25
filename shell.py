@@ -24,12 +24,15 @@ class MisoDBShell():
                 try:
                     tree = self.parser.parse(query)
                     param = QueryTransformer().transform(tree)
-                    #execute(param)
-                    print(tree)
-                    print(tree.pretty())
+                    print(param[0])
+                    execute(param[0])
                 except lark.exceptions.UnexpectedInput:
                     print(prompt + 'SYNTAX ERROR')
                     if test.test_flg: raise
+                except lark.exceptions.VisitError as cm:
+                    print(prompt + str(cm.__context__))
+                    if test.test_flg: raise cm.__context__
+            
                     
 
     def input_queries(self, prompt):

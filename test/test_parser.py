@@ -3,6 +3,8 @@ from unittest import result
 from lark import Tree, Token
 from parser import QueryTransformer
 
+from shell import MisoDBShell
+
 from lark.exceptions import VisitError
 from exceptions import CharLengthError
 
@@ -178,3 +180,22 @@ class TransformerTestCase(unittest.TestCase):
         result = self.transform(input)
         expected = ('FK', ['first_name', 'middle_name', 'last_name'], 'people', ['first_name', 'middle_name', 'last_name'])
         self.assertTupleEqual(result, expected)
+
+    def test_trans_drop_table_query(self):
+        input = 'drop table account;'
+        result = self.transform(MisoDBShell().parser.parse(input))
+        expected = [('drop', 'account')]
+        self.assertListEqual(result, expected)
+    
+    def test_trans_desc_table_query(self):
+        input = 'desc account;'
+        result = self.transform(MisoDBShell().parser.parse(input))
+        expected = [('desc', 'account')]
+        self.assertListEqual(result, expected)
+        
+    def test_trans_show_tables_query(self):
+        input = 'show tables;'
+        result = self.transform(MisoDBShell().parser.parse(input))
+        expected = [('show', 0)]
+        self.assertListEqual(result, expected)
+        

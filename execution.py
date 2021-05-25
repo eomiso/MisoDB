@@ -1,8 +1,8 @@
 from exceptions import *
-from test import test_flg
+import test
 from relationdb import MisoDB
 
-if test_flg:
+if test.test_flg:
     FILENAME = 'testBDB.db'
 else:
     FILENAME = 'myBDB.db'
@@ -16,27 +16,30 @@ def init_db():
             db['.meta.tabels'] = set()
 
 
-def execute(msg:list):
+def execute(msg:tuple):
     if msg[0] == 'create':
         create_table(msg[1], msg[2])
         print(f"'{msg[1]}' table is created")
-    if msg[0] == 'drop':
+    elif msg[0] == 'drop':
         drop_table(msg[1])
         print(f"'{msg[1]}' table is dropped")
-    if msg[0] == 'desc':
+    elif msg[0] == 'desc':
         desc_table(msg[1])
-    if msg[0] == 'show':
+    elif msg[0] == 'show':
         show_tables()
-    if msg[0] == 'insert':
+    elif msg[0] == 'insert':
         # TODO
         insert_records()
-    if msg[0] == 'delete':
+    elif msg[0] == 'delete':
         # TODO
         delete_records()
-    if msg[0] == 'select':
+    elif msg[0] == 'select':
         select_records()
+    else:
+        if test.test_flg:
+            raise NotImplementedError("Execute")
 
-def create_table():
+def create_table(name, schema):
     pass
 def drop_table():
     pass

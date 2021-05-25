@@ -34,6 +34,16 @@ class CommonTransformer(Transformer):
 class TableTransformer(CommonTransformer):
     def create_table_query(self, items):
         return ('create', items[2][1], items[3])
+    
+    def drop_table_query(self, items):
+        return ('drop', items[2][1])
+    
+    def desc_query(self, items):
+        return ('desc', items[1][1])
+    
+    def show_tables_query(self, items):
+        return ('show', 0)
+    
         
     def table_element_list(self, items):
         attributes = {}  # {'att': ['type_name', 'type_size', nullity]} 
@@ -51,7 +61,7 @@ class TableTransformer(CommonTransformer):
                 type, *context = context[0]
                 for at in context[0]:
                     if at not in attributes:
-                        raise NonExistingColumnDefError
+                        raise NonExistingColumnDefError(at)
                 if type == 'PK':
                     if pk:
                         raise DuplicatePrimaryKeyDefError()
@@ -86,7 +96,14 @@ class TableTransformer(CommonTransformer):
 class RecordTransformer(CommonTransformer):
     pass
 class QueryTransformer(TableTransformer, RecordTransformer):
-    pass
+    def command(self, items):
+        if not isinstance(items[0], tuple):
+            exit("Program terminated")
+        return items[0]
+    def query_list(self, items):
+        return items[0]
+    def query(self, items):
+        return items[0]
 fmtstr = "'{query_type}' requested\n" # the string formnat to be printed
 query_types = {
         "create_table_query": "CREATE TABLE", 

@@ -47,21 +47,15 @@ class ShellTestCase(unittest.TestCase):
     (3) Check if the correct input passes without error
     """
     @patch('builtins.input', 
-            side_effect=['desc ', 'hello;', 'select *', 'from account;', 'quit()'])
+            side_effect=['desc ', 'hello;', 'select *', 'from account;', 'exit'])
     def test_syntax_error_correct_input(self, mock_input):
-        try:
-            self.shell.promptloop()
-        except SystemExit:
-            pass
+        self.assertRaises(StopIteration, self.shell.promptloop)
     
     @patch('builtins.input', 
             side_effect=['create table account(acc_number int not null,  \
-                           branch_name char(10), primary key(acc_number));', 'quit()'])
+                           branch_name char(10), primary key(acc_number));', 'exit'])
     def test_syntax_error_correct_input_create_query(self, mock_input):
-        try:
-            self.shell.promptloop()
-        except SystemExit:
-            pass
+        self.assertRaises(StopIteration, self.shell.promptloop)
 
     @patch('builtins.input', 
             side_effect=["""
@@ -90,12 +84,9 @@ class ShellTestCase(unittest.TestCase):
                         middle_name char(10),
                         last_name char(10),
                         PRIMARY KEY(first_name, middle_name, last_name));"""
-                        , 'quit()'])
+                        , 'exit'])
     def test_syntax_error_correct_input_create_query_with_foreign_primary(self, mock_input):
-        try:
-            self.shell.promptloop()
-        except SystemExit:
-            pass  
+        self.assertRaises(StopIteration, self.shell.promptloop)
 
     @patch('builtins.input', 
             side_effect=["""
@@ -103,33 +94,25 @@ class ShellTestCase(unittest.TestCase):
                        from borrower as B, loan
                        where borrower.loan_number = loan.loan_number
                        and branch_name = 'Perryridge';
-                    """, 'quit()'])
+                    """, 'exit'])
     def test_syntax_error_correct_input_select_query(self, mock_input):
-        try:
-            self.shell.promptloop()
-        except SystemExit:
-            pass
+        self.assertRaises(StopIteration, self.shell.promptloop)
 
     @patch('builtins.input', 
             side_effect=["""
                        delete from account
                        where branch_name = 'Perryridge';
-                    """, 'quit()'])
+                    """, 'exit'])
     def test_syntax_error_correct_input_delete_query(self, mock_input):
-        try:
-            self.shell.promptloop()
-        except SystemExit:
-            pass
+        self.assertRaises(StopIteration, self.shell.promptloop)
 
     @patch('builtins.input', 
             side_effect=["""
                        delete from account
                        where branch_name = 'Perryridge';
-                    """, 'quit()'])
+                    """, 'exit'])
     def test_syntax_error_correct_inpupt_select_query(self, mock_input):
-        try:
-            self.shell.promptloop()
-        except SystemExit:
-            pass
+        self.assertRaises(StopIteration, self.shell.promptloop)
+
 if __name__ == "__main__":
     unittest.main()
