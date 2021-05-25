@@ -2,10 +2,10 @@ COMMAND = 'Query'
 PARAM = 'Param'
 
 import sys
-from parser import Parser
+from parser import Parser, QueryTransformer
 import lark
 import test
-from MisoDB.execution import init_db
+from execution import init_db, execute
 
 __all__ = ['MisoDBShell']
 
@@ -23,7 +23,10 @@ class MisoDBShell():
             for query in self.input_queries(prompt):
                 try:
                     tree = self.parser.parse(query)
+                    param = QueryTransformer().transform(tree)
+                    #execute(param)
                     print(tree)
+                    print(tree.pretty())
                 except lark.exceptions.UnexpectedInput:
                     print(prompt + 'SYNTAX ERROR')
                     if test.test_flg: raise

@@ -1,4 +1,3 @@
-from io import StringIO
 import unittest
 from unittest.mock import patch
 from lark.exceptions import UnexpectedToken
@@ -54,7 +53,87 @@ class ShellTestCase(unittest.TestCase):
             self.shell.promptloop()
         except SystemExit:
             pass
+    
+    @patch('builtins.input', 
+            side_effect=['create table account(acc_number int not null,  \
+                           branch_name char(10), primary key(acc_number));', 'quit()'])
+    def test_syntax_error_correct_input_create_query(self, mock_input):
+        try:
+            self.shell.promptloop()
+        except SystemExit:
+            pass
 
+    @patch('builtins.input', 
+            side_effect=["""
+                        CREATE TABLE teaches(
+                        id INT,
+                        course_id INT,
+                        sec_id INT,
+                        semester CHAR(8),
+                        year CHAR(4),
+                        PRIMARY KEY(id),
+                        PRIMARY KEY(course_id),
+                        PRIMARY KEY(sec_id),
+                        FOREIGN KEY(course_id) REFERENCES section(sec_id),
+                        FOREIGN KEY(course_id) REFERENCES section(course_id));"""
+                        , """
+                        CREATE TABLE instructor(
+                        ID INT,
+                        first_name char(10),
+                        middle_name char(10),
+                        last_name char(10),
+                        date_of_birth DATE,
+                        PRIMARY KEY(ID),
+                        PRIMARY KEY(first_name, middle_name, last_name),
+                        FOREIGN KEY(first_name, middle_name, last_name) REFERENCES people(first_name, middle_name, last_name));"""
+                        , """
+                        CREATE TABLE people(
+                        SECURITY_ID INT,
+                        first_name char(10),
+                        middle_name char(10),
+                        last_name char(10),
+                        PRIMARY KEY(ID),
+                        PRIMARY KEY(first_name, middle_name, last_name));"""
+                        , 'quit()'])
+    def test_syntax_error_correct_input_create_query_with_foreign_primary(self, mock_input):
+        try:
+            self.shell.promptloop()
+        except SystemExit:
+            pass  
 
+    @patch('builtins.input', 
+            side_effect=["""
+                       select customer_name, borrower.loan_number, amount
+                       from borrower as B, loan
+                       where borrower.loan_number = loan.loan_number
+                       and branch_name = 'Perryridge';
+                    """, 'quit()'])
+    def test_syntax_error_correct_input_select_query(self, mock_input):
+        try:
+            self.shell.promptloop()
+        except SystemExit:
+            pass
+
+    @patch('builtins.input', 
+            side_effect=["""
+                       delete from account
+                       where branch_name = 'Perryridge';
+                    """, 'quit()'])
+    def test_syntax_error_correct_input_delete_query(self, mock_input):
+        try:
+            self.shell.promptloop()
+        except SystemExit:
+            pass
+
+    @patch('builtins.input', 
+            side_effect=["""
+                       delete from account
+                       where branch_name = 'Perryridge';
+                    """, 'quit()'])
+    def test_syntax_error_correct_inpupt_select_query(self, mock_input):
+        try:
+            self.shell.promptloop()
+        except SystemExit:
+            pass
 if __name__ == "__main__":
     unittest.main()
