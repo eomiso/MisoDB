@@ -33,9 +33,36 @@ class CommonTransformer(Transformer):
 
 class TableTransformer(CommonTransformer):
     def create_table_query(self, items):
-        pass
+        return ('create', items[2][1], items[3])
+        
     def table_element_list(self, items):
-        pass
+        attributes = {}  # {'att': ['type_name', 'type_size', nullity]} 
+        pk = []         # ['att']
+        fk = []         # [(['att'], 'table', ['att'])]
+
+        for type, *context in items[1:-1]:
+            if type == 'col_def':
+                at,(t, size_t), nullity = context 
+                if at in attributes:
+                    raise DuplicateColumnDefError()
+                attributes[at] = [t, size_t, nullity]
+
+            elif type == 'constraints':
+                type, *context = context[0]
+                for at in context[0]:
+                    if at not in attributes:
+                        raise NonExistingColumnDefError
+                if type == 'PK':
+                    if pk:
+                        raise DuplicatePrimaryKeyDefError()
+                    pk = context[0]
+                    for at in pk:
+                        attributes[at][2] = False # pk -> not null
+                elif type == 'FK':
+                    fk.append(tuple(context))
+
+        return attributes, pk, fk
+
     def table_element(self, items):
         return items[0]
     def column_definition(self, items):
@@ -46,7 +73,7 @@ class TableTransformer(CommonTransformer):
         #items[0] ('col_name', '<name>')
         return ('col_def', items[0][1], items[1], nullable)
     def table_constraint_definition(self, items):
-        return items[0]
+        return ('constraints',items[0])
     
     def primary_key_constraint(self, items):
         return('PK', items[2])
@@ -54,7 +81,7 @@ class TableTransformer(CommonTransformer):
     def referential_constraint(self, items):
         #items[4] ('tab_name', '<name>')
         return ('FK', items[2], items[4][1], items[5] )
-    
+
 
 class RecordTransformer(CommonTransformer):
     pass

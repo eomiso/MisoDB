@@ -34,6 +34,16 @@ class TransformerTestCase(unittest.TestCase):
                      """
         #join_query =
 
+        self.very_long_tree = Tree('table_element_list', [Token('LP', '(')
+                                  , Tree('table_element', [Tree('column_definition', [Tree('column_name', [Token('IDENTIFIER', 'ID')]), Tree('data_type', [Token('TYPE_INT', 'INT'), Token('NOT', 'not'), Token('NULL', 'null')])])])
+                                  , Tree('table_element', [Tree('column_definition', [Tree('column_name', [Token('IDENTIFIER', 'first_name')]), Tree('data_type', [Token('TYPE_CHAR', 'char'), Token('LP', '('), Token('INT', '10'), Token('RP', ')')])])])
+                                  , Tree('table_element', [Tree('column_definition', [Tree('column_name', [Token('IDENTIFIER', 'middle_name')]), Tree('data_type', [Token('TYPE_CHAR', 'char'), Token('LP', '('), Token('INT', '10'), Token('RP', ')')])])])
+                                  , Tree('table_element', [Tree('column_definition', [Tree('column_name', [Token('IDENTIFIER', 'last_name')]), Tree('data_type', [Token('TYPE_CHAR', 'char'), Token('LP', '('), Token('INT', '10'), Token('RP', ')')])])])
+                                  , Tree('table_element', [Tree('column_definition', [Tree('column_name', [Token('IDENTIFIER', 'date_of_birth')]), Tree('data_type', [Token('TYPE_DATE', 'DATE')])])])
+                                  , Tree('table_element', [Tree('table_constraint_definition', [Tree('primary_key_constraint', [Token('PRIMARY', 'PRIMARY'), Token('KEY', 'KEY'), Tree('column_name_list', [Token('LP', '('), Tree('column_name', [Token('IDENTIFIER', 'ID')]), Token('RP', ')')])])])])
+                                  , Tree('table_element', [Tree('table_constraint_definition', [Tree('referential_constraint', [Token('FOREIGN', 'FOREIGN'), Token('KEY', 'KEY'), Tree('column_name_list', [Token('LP', '('), Tree('column_name', [Token('IDENTIFIER', 'first_name')]), Tree('column_name', [Token('IDENTIFIER', 'middle_name')]), Tree('column_name', [Token('IDENTIFIER', 'last_name')]), Token('RP', ')')]), Token('REFERENCES', 'REFERENCES'), Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name_list', [Token('LP', '('), Tree('column_name', [Token('IDENTIFIER', 'first_name')]), Tree('column_name', [Token('IDENTIFIER', 'middle_name')]), Tree('column_name', [Token('IDENTIFIER', 'last_name')]), Token('RP', ')')])])])]), Token('RP', ')')])
+        self.maxDiff = None
+
         return super().setUp()
     def tearDown(self) -> None:
         return super().tearDown()
@@ -75,14 +85,14 @@ class TransformerTestCase(unittest.TestCase):
         
         self.assertRaises((CharLengthError, VisitError), self.transform, input)
 
-    def test_trans_table_element(self, items):
+    def test_trans_table_element(self):
         input = Tree('table_element', [Tree('column_definition'
                     , [Tree('column_name', [Token('IDENTIFIER', 'ID')]), Tree('data_type', [Token('TYPE_INT', 'INT')])])])
         result = self.transform(input)
         expected = ('col_def', 'id', ('int', -1), True)
-        self.assertRaises(result, expected)
+        self.assertTupleEqual(result, expected)
 
-    def test_trans_table_element_list(self, items):
+    def test_trans_table_element_list(self):
         input = Tree('table_element_list', [Token('LP', '(')
                     , Tree('table_element', [Tree('column_definition'
                         , [Tree('column_name', [Token('IDENTIFIER', 'acc_number')]), Tree('data_type', [Token('TYPE_INT', 'int')]), Token('NOT', 'not'), Token('NULL', 'null')])])
@@ -93,11 +103,27 @@ class TransformerTestCase(unittest.TestCase):
                         , Tree('column_name_list', [Token('LP', '('), Tree('column_name', [Token('IDENTIFIER', 'acc_number')]), Token('RP', ')')])])])])
                     , Token('RP', ')')])
         result = self.transform(input)
-        expected = ( ('col_def', 'acc_number', ('int', -1), False)
-                   , ('col_def', 'branch_name', ('char', 10), True)
-                   , ('PK', ['acc_number'])
+        expected = ( {'acc_number': ['int', -1, False], 'branch_name' : ['char', 10, True]}
+                   , ['acc_number']
+                   , [] )   
+        #expected = ( ('col_def', 'acc_number', ('int', -1), False)
+        #           , ('col_def', 'branch_name', ('char', 10), True)
+        #           , ('PK', ['acc_number'])
+        #           )
+        self.assertTupleEqual(result, expected)
+
+    def test_trans_table_element_list_long(self):
+        input = self.very_long_tree
+        result = self.transform(input)
+        expected = ( {'id': ['int', -1, False]
+                   , 'first_name': ['char', 10, True]
+                   , 'middle_name': ['char', 10, True]
+                   , 'last_name': ['char', 10, True]
+                   , 'date_of_birth': ['date', -1, True]}
+                   , ['id']
+                   , [(['first_name', 'middle_name', 'last_name'], 'people', ['first_name', 'middle_name', 'last_name'])]
                    )
-        self.assertRaises(result, expected)
+        self.assertTupleEqual(result, expected)
     
     def test_trans_column_definition_char_type(self):
         input = Tree('column_definition'

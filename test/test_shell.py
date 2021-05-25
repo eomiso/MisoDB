@@ -66,33 +66,29 @@ class ShellTestCase(unittest.TestCase):
     @patch('builtins.input', 
             side_effect=["""
                         CREATE TABLE teaches(
-                        id INT,
+                        id INT not null,
                         course_id INT,
                         sec_id INT,
                         semester CHAR(8),
                         year CHAR(4),
                         PRIMARY KEY(id),
-                        PRIMARY KEY(course_id),
-                        PRIMARY KEY(sec_id),
                         FOREIGN KEY(course_id) REFERENCES section(sec_id),
                         FOREIGN KEY(course_id) REFERENCES section(course_id));"""
                         , """
                         CREATE TABLE instructor(
-                        ID INT,
+                        ID INT not null,
                         first_name char(10),
                         middle_name char(10),
                         last_name char(10),
                         date_of_birth DATE,
                         PRIMARY KEY(ID),
-                        PRIMARY KEY(first_name, middle_name, last_name),
                         FOREIGN KEY(first_name, middle_name, last_name) REFERENCES people(first_name, middle_name, last_name));"""
                         , """
                         CREATE TABLE people(
-                        SECURITY_ID INT,
+                        SECURITY_ID INT not null,
                         first_name char(10),
                         middle_name char(10),
                         last_name char(10),
-                        PRIMARY KEY(ID),
                         PRIMARY KEY(first_name, middle_name, last_name));"""
                         , 'quit()'])
     def test_syntax_error_correct_input_create_query_with_foreign_primary(self, mock_input):
