@@ -5,10 +5,10 @@
 # reference: https://github.com/python/cpython/blob/3.9/Lib/cmd.py
 # 
 
-from shell import PromptShell
+from shell import MisoDBShell
 
 def main():
-    PromptShell().promptloop()
+    MisoDBShell().promptloop()
 
 if __name__=="__main__":
     main()

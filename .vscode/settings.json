@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.ttml": "xml",
+        "*.ttss": "css"
+    },
+    "python.pythonPath": "/home/eomiso/miniconda3/envs/database/bin/python"
+}

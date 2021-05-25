@@ -78,6 +78,7 @@ class TableTransformer(CommonTransformer):
     def referential_constraint(self, items):
         return ('FK', items[2], items[4], items[5])
 
+class RecordTransformer(CommonTransformer):
 
 class Transformer(TableTransformer):
     def command(self, items):
