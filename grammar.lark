@@ -54,7 +54,7 @@ query : create_table_query
       | select_query
       | insert_query
       | drop_table_query
-      | descending_query
+      | desc_query
       | show_tables_query
       | delete_query
 

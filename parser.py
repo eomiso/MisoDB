@@ -1,11 +1,13 @@
 from lark import Lark, Transformer
-import sys
 
-_queues = [] # queues to be printed to the prompt
 
 class Parser:
-    with open('grammar.lark') as file:
-        sql_parser = Lark(file.read(), start="command", lexer="standard")
+    def __init__(self, file_name):
+        self.file_name = file_name
+
+    def get_parser(self):
+        with open(self.file_name) as fd:
+            return Lark(fd.read(), start="command", lexer="standard")
 
 class MyTransformer(Transformer):
     fmtstr = "'{query_type}' requested\n" # the string formnat to be printed
