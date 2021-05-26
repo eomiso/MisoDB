@@ -364,4 +364,16 @@ class TransformerTestCase(unittest.TestCase):
 
         self.assertTupleEqual(result,expected)
     
+    def test_trans_predicate(self):
+        input = Tree('predicate', [Tree('comparison_predicate', [Tree('comp_operand', [Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name', [Token('IDENTIFIER', 'first_name')])]), Token('COMP_OP', '='), Tree('comp_operand', [Tree('comparable_value', [Token('STR', "'David'")])])])])
+        result = self.transform(input)
+        expected = ['=', ('attr', 'people', 'first_name'), ('str', 'david')]
+
+        self.assertTupleEqual(result, expected)
+    
+    def test_trans_predicate(self):
+        input = Tree('predicate', [Tree('null_predicate', [Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name', [Token('IDENTIFIER', 'id')]), Tree('null_operation', [Token('IS', 'is'), Token('NOT', 'not'), Token('NULL', 'null')])])])
+        result = self.transform(input)
+        expected = [('attr', 'people', 'id'), False]
+    
 
