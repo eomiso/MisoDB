@@ -190,7 +190,7 @@ def show_tables():
             print(x)
         print("----------------")
 
-def insert_records():
+def insert_records(name, attrs, vals):
     if test.get_test_flg():
         FILENAME = 'testBDB.db'
     else:

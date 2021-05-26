@@ -1,4 +1,4 @@
-from lark import Lark, Transformer
+from lark import Lark, Transformer, Token, Tree
 from exceptions import *
 
 
@@ -93,11 +93,45 @@ class TableTransformer(CommonTransformer):
         return ('FK', items[2], items[4][1], items[5] )
 
 
-class RecordTransformer(CommonTransformer):
-    pass
+class WhereClauseTransformer(CommonTransformer):
+    def comparable_value(self, items):
+        type = items[0].type
+        if type == 'STR':
+            val = items[0].value.lstrip("'\"").rstrip("'\"")
+            return ('str', val)
+
+        if type == 'INT':
+            return ('int', int(items[0].value))
+
+        if type == 'DATE':
+            val = items[0].value.lstrip("'\"").rstrip("'\"")
+            return ('date', val)
+    
+
+
+class RecordTransformer(WhereClauseTransformer):
+    def insert_query(self, items):
+        return 'insert', items[2][1], items[3][0], items[3][1]
+
+    def insert_columns_and_sources(self, items):
+        if len(items) < 2:
+            return ([], items[0])
+        else:
+            return (items[0], items[1])
+
+    def value_list(self, items):
+        print(items)
+        return items[2:-1]
+
+    def value(self, items):
+        if type(items[0]) == Token:
+            return ('null', None)
+        elif type(items[0] == tuple):
+            return items[0]
 
 class QueryTransformer(TableTransformer, RecordTransformer):
     def command(self, items):
+        print(items)
         if not isinstance(items[0], tuple):
             exit("Program terminated")
         return items[0]

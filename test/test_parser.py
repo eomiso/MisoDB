@@ -1,6 +1,7 @@
 import unittest
 from unittest import result
 from unittest.case import expectedFailure
+from unittest.signals import registerResult
 from lark import Tree, Token
 from parser import QueryTransformer
 
@@ -457,5 +458,53 @@ class TransformerTestCase(unittest.TestCase):
         self.assertTupleEqual(result, expected)
 
 # --------------------------------
-    def test_trans_value(self):
+    def test_trans_value_int(self):
+        input = Tree('value', [Tree('comparable_value', [Token('INT', '1234')])])
+        result = self.transform(input)
+        expected = ('int', 1234)
 
+        self.assertTupleEqual(result, expected)
+
+    def test_trans_value_null(self):
+        input = Tree('value', [Token('NULL', 'null')])
+        result = self.transform(input)
+        expected = ('null', None)
+
+        self.assertTupleEqual(result, expected)
+
+    def test_trans_value_list(self):
+        input = Tree('value_list', [Token('VALUES', 'values'), Token('LP', '('), Tree('value', [Tree('comparable_value', [Token('INT', '1234')])]), Tree('value', [Tree('comparable_value', [Token('STR', "'sillim'")])]), Tree('value', [Token('NULL', 'null')]), Token('RP', ')')])
+        result = self.transform(input)
+        expected = [('int', 1234), ('str', 'sillim'), ('null', None)]
+
+        self.assertListEqual(result, expected)
+
+    def test_trans_insert_columns_and_sources(self):
+        input = Tree('insert_columns_and_sources', [Tree('column_name_list', [Token('LP', '('), Tree('column_name', [Token('IDENTIFIER', 'acc_number')]), Tree('column_name', [Token('IDENTIFIER', 'branch_name')]), Tree('column_name', [Token('IDENTIFIER', 'balance')]), Token('RP', ')')]), Tree('value_list', [Token('VALUES', 'values'), Token('LP', '('), Tree('value', [Tree('comparable_value', [Token('INT', '1234')])]), Tree('value', [Tree('comparable_value', [Token('STR', "'sillim'")])]), Tree('value', [Token('NULL', 'null')]), Token('RP', ')')])])
+        result = self.transform(input)
+        expected = (['acc_number', 'branch_name', 'balance'], [('int', 1234), ('str', 'sillim'), ('null', None)])
+
+        self.assertTupleEqual(result, expected)
+
+    def test_trans_insert_columns_and_sources_empty_columns(self):
+        input = Tree('insert_columns_and_sources', [Tree('value_list', [Token('VALUES', 'values'), Token('LP', '('), Tree('value', [Tree('comparable_value', [Token('INT', '1234')])]), Tree('value', [Tree('comparable_value', [Token('STR', "'sillim'")])]), Tree('value', [Token('NULL', 'null')]), Token('RP', ')')])])
+        result = self.transform(input)
+        expected = ([], [('int', 1234), ('str', 'sillim'), ('null', None)])
+
+        self.assertTupleEqual(result, expected)
+
+    def test_input_query(self):
+        input = Tree('command', [Tree('query_list', [Tree('query', [Tree('insert_query', [Token('INSERT', 'Insert'), Token('INTO', 'into'), Tree('table_name', [Token('IDENTIFIER', 'account')]), Tree('insert_columns_and_sources', [Tree('column_name_list', [Token('LP', '('), Tree('column_name', [Token('IDENTIFIER', 'acc_number')]), Tree('column_name', [Token('IDENTIFIER', 'branch_name')]), Tree('column_name', [Token('IDENTIFIER', 'balance')]), Token('RP', ')')]), Tree('value_list', [Token('VALUES', 'values'), Token('LP', '('), Tree('value', [Tree('comparable_value', [Token('INT', '1234')])]), Tree('value', [Tree('comparable_value', [Token('STR', "'sillim'")])]), Tree('value', [Token('NULL', 'NULL')]), Token('RP', ')')])])])])])])
+
+        result = self.transform(input)
+        expected = ('insert', 'account', ['account', 'branch_name', 'balance'], [('int',1234), ('str', 'sillim'), ('null', None)])
+
+        self.assertTupleEqual(result, expected)
+    
+    def test_input_query(self):
+        input = Tree('command', [Tree('query_list', [Tree('query', [Tree('insert_query', [Token('INSERT', 'Insert'), Token('INTO', 'into'), Tree('table_name', [Token('IDENTIFIER', 'account')]), Tree('insert_columns_and_sources', [Tree('value_list', [Token('VALUES', 'values'), Token('LP', '('), Tree('value', [Tree('comparable_value', [Token('INT', '1234')])]), Tree('value', [Tree('comparable_value', [Token('STR', '"sillim"')])]), Tree('value', [Token('NULL', 'null')]), Token('RP', ')')])])])])])])
+
+        result = self.transform(input)
+        expected = ('insert', 'account', [], [('int',1234), ('str', 'sillim'), ('null', None)])
+
+        self.assertTupleEqual(result, expected)
