@@ -98,7 +98,7 @@ class WhereClauseTransformer(CommonTransformer):
         type = items[0].type
         if type == 'STR':
             val = items[0].value.lstrip("'\"").rstrip("'\"")
-            return ('str', val)
+            return ('char', val)
 
         if type == 'INT':
             return ('int', int(items[0].value))

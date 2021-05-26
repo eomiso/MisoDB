@@ -312,7 +312,7 @@ class TransformerTestCase(unittest.TestCase):
     def test_trans_comparable_value_str(self):
         input = Tree('comparable_value', [Token('STR', "'EP'")])
         result = self.transform(input)
-        expected = ('str', 'EP')
+        expected = ('char', 'EP')
        
         self.assertTupleEqual(result,expected)
 
@@ -361,14 +361,14 @@ class TransformerTestCase(unittest.TestCase):
     def test_trans_comp_predicate_str(self):
         input = Tree('comparison_predicate', [Tree('comp_operand', [Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name', [Token('IDENTIFIER', 'first_name')])]), Token('COMP_OP', '='), Tree('comp_operand', [Tree('comparable_value', [Token('STR', "'DAVID'")])])])
         result = self.transform(input)
-        expected = ['=', ('attr', 'people', 'first_name'), ('str', 'david')]
+        expected = ['=', ('attr', 'people', 'first_name'), ('char', 'david')]
 
         self.assertTupleEqual(result,expected)
     
     def test_trans_predicate(self):
         input = Tree('predicate', [Tree('comparison_predicate', [Tree('comp_operand', [Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name', [Token('IDENTIFIER', 'first_name')])]), Token('COMP_OP', '='), Tree('comp_operand', [Tree('comparable_value', [Token('STR', "'David'")])])])])
         result = self.transform(input)
-        expected = ['=', ('attr', 'people', 'first_name'), ('str', 'david')]
+        expected = ['=', ('attr', 'people', 'first_name'), ('char', 'david')]
 
         self.assertTupleEqual(result, expected)
     
@@ -382,7 +382,7 @@ class TransformerTestCase(unittest.TestCase):
     def test_trans_boolean_test_predicate(self):
         input = Tree('boolean_test', [Tree('predicate', [Tree('comparison_predicate', [Tree('comp_operand', [Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name', [Token('IDENTIFIER', 'middle_name')])]), Token('COMP_OP', '='), Tree('comp_operand', [Tree('comparable_value', [Token('STR', "'FON'")])])])])])
         result = self.transform(input)
-        expected = ['=', ('attr', 'people', 'middle_name'), ('str', 'fon')]
+        expected = ['=', ('attr', 'people', 'middle_name'), ('char', 'fon')]
 
         self.assertTupleEqual(result, expected)
 
@@ -392,7 +392,7 @@ class TransformerTestCase(unittest.TestCase):
         # people.id is not null and (people.middle_name = 'VON' or people.middle_name = 'FON');
         input = Tree('boolean_factor', [Tree('boolean_test', [Tree('predicate', [Tree('comparison_predicate', [Tree('comp_operand', [Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name', [Token('IDENTIFIER', 'middle_name')])]), Token('COMP_OP', '='), Tree('comp_operand', [Tree('comparable_value', [Token('STR', "'FON'")])])])])])])
         result = self.transform(input)
-        expected = ('pos', ['=', ('attr', 'people', 'middle_name'), ('str', 'von')])
+        expected = ('pos', ['=', ('attr', 'people', 'middle_name'), ('char', 'von')])
 
         self.assertTupleEqual(result, expected)
 
@@ -403,7 +403,7 @@ class TransformerTestCase(unittest.TestCase):
         # not (people.middle_name = 'VON');
         input = Tree('boolean_factor', [Token('NOT', 'not'), Tree('boolean_test', [Tree('parenthesized_boolean_expr', [Token('LP', '('), Tree('boolean_expr', [Tree('boolean_term', [Tree('boolean_factor', [Tree('boolean_test', [Tree('predicate', [Tree('comparison_predicate', [Tree('comp_operand', [Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name', [Token('IDENTIFIER', 'middle_name')])]), Token('COMP_OP', '='), Tree('comp_operand', [Tree('comparable_value', [Token('STR', "'VON'")])])])])])])])]), Token('RP', ')')])])])
         result = self.transform(input)
-        expected = ('neg', ['=', ('attr', 'people', 'middle_name'), ('str', 'von')])
+        expected = ('neg', ['=', ('attr', 'people', 'middle_name'), ('char', 'von')])
 
         self.assertTupleEqual(result, expected)
 
@@ -419,8 +419,8 @@ class TransformerTestCase(unittest.TestCase):
         result = self.transform(input)
         expected = [
                     [('pos', [('attr', 'people', 'id'), False])
-                        , ('pos', ['=', ('attr', 'people', 'middle_name'), ('str', 'von')]), 'and']
-                    , ('pos', ['=', ('attr', 'people', 'last_name'), ('str', 'lee')])
+                        , ('pos', ['=', ('attr', 'people', 'middle_name'), ('char', 'von')]), 'and']
+                    , ('pos', ['=', ('attr', 'people', 'last_name'), ('char', 'lee')])
                     , 'and']
 
         self.assertListEqual(result, expected)
@@ -440,8 +440,8 @@ class TransformerTestCase(unittest.TestCase):
         result = self.transform(input)
         expected = [
                         ('pos', [('attr', 'people', 'id'), False])
-                        , ('pos', [ ('pos', ['=', ('attr', 'people', 'middle_name'), ('str', 'von')])
-                                  , ('pos', ['=', ('attr', 'people', 'last_name'), ('str', 'fon')])
+                        , ('pos', [ ('pos', ['=', ('attr', 'people', 'middle_name'), ('char', 'von')])
+                                  , ('pos', ['=', ('attr', 'people', 'last_name'), ('char', 'fon')])
                                   , 'and'])
                         , 'and']
         self.assertListEqual(result, expected)
@@ -452,12 +452,13 @@ class TransformerTestCase(unittest.TestCase):
         # people.id is not null and (people.middle_name = 'VON' or people.middle_name = 'FON');
         input = Tree('parenthesized_boolean_expr', [Token('LP', '('), Tree('boolean_expr', [Tree('boolean_term', [Tree('boolean_factor', [Tree('boolean_test', [Tree('predicate', [Tree('comparison_predicate', [Tree('comp_operand', [Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name', [Token('IDENTIFIER', 'middle_name')])]), Token('COMP_OP', '='), Tree('comp_operand', [Tree('comparable_value', [Token('STR', "'VON'")])])])])])])]), Token('OR', 'or'), Tree('boolean_term', [Tree('boolean_factor', [Tree('boolean_test', [Tree('predicate', [Tree('comparison_predicate', [Tree('comp_operand', [Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name', [Token('IDENTIFIER', 'middle_name')])]), Token('COMP_OP', '='), Tree('comp_operand', [Tree('comparable_value', [Token('STR', "'FON'")])])])])])])])]), Token('RP', ')')])
         result = self.transform(input)
-        expected = ('pos', [ ('pos', ['=', ('attr', 'people', 'middle_name'), ('str', 'von')])
-                                  , ('pos', ['=', ('attr', 'people', 'last_name'), ('str', 'fon')])
+        expected = ('pos', [ ('pos', ['=', ('attr', 'people', 'middle_name'), ('char', 'von')])
+                                  , ('pos', ['=', ('attr', 'people', 'last_name'), ('char', 'fon')])
                                   , 'and'])
         self.assertTupleEqual(result, expected)
 
 # --------------------------------
+# Test for input query parser
     def test_trans_value_int(self):
         input = Tree('value', [Tree('comparable_value', [Token('INT', '1234')])])
         result = self.transform(input)
@@ -475,21 +476,21 @@ class TransformerTestCase(unittest.TestCase):
     def test_trans_value_list(self):
         input = Tree('value_list', [Token('VALUES', 'values'), Token('LP', '('), Tree('value', [Tree('comparable_value', [Token('INT', '1234')])]), Tree('value', [Tree('comparable_value', [Token('STR', "'sillim'")])]), Tree('value', [Token('NULL', 'null')]), Token('RP', ')')])
         result = self.transform(input)
-        expected = [('int', 1234), ('str', 'sillim'), ('null', None)]
+        expected = [('int', 1234), ('char', 'sillim'), ('null', None)]
 
         self.assertListEqual(result, expected)
 
     def test_trans_insert_columns_and_sources(self):
         input = Tree('insert_columns_and_sources', [Tree('column_name_list', [Token('LP', '('), Tree('column_name', [Token('IDENTIFIER', 'acc_number')]), Tree('column_name', [Token('IDENTIFIER', 'branch_name')]), Tree('column_name', [Token('IDENTIFIER', 'balance')]), Token('RP', ')')]), Tree('value_list', [Token('VALUES', 'values'), Token('LP', '('), Tree('value', [Tree('comparable_value', [Token('INT', '1234')])]), Tree('value', [Tree('comparable_value', [Token('STR', "'sillim'")])]), Tree('value', [Token('NULL', 'null')]), Token('RP', ')')])])
         result = self.transform(input)
-        expected = (['acc_number', 'branch_name', 'balance'], [('int', 1234), ('str', 'sillim'), ('null', None)])
+        expected = (['acc_number', 'branch_name', 'balance'], [('int', 1234), ('char', 'sillim'), ('null', None)])
 
         self.assertTupleEqual(result, expected)
 
     def test_trans_insert_columns_and_sources_empty_columns(self):
         input = Tree('insert_columns_and_sources', [Tree('value_list', [Token('VALUES', 'values'), Token('LP', '('), Tree('value', [Tree('comparable_value', [Token('INT', '1234')])]), Tree('value', [Tree('comparable_value', [Token('STR', "'sillim'")])]), Tree('value', [Token('NULL', 'null')]), Token('RP', ')')])])
         result = self.transform(input)
-        expected = ([], [('int', 1234), ('str', 'sillim'), ('null', None)])
+        expected = ([], [('int', 1234), ('char', 'sillim'), ('null', None)])
 
         self.assertTupleEqual(result, expected)
 
@@ -497,7 +498,7 @@ class TransformerTestCase(unittest.TestCase):
         input = Tree('command', [Tree('query_list', [Tree('query', [Tree('insert_query', [Token('INSERT', 'Insert'), Token('INTO', 'into'), Tree('table_name', [Token('IDENTIFIER', 'account')]), Tree('insert_columns_and_sources', [Tree('column_name_list', [Token('LP', '('), Tree('column_name', [Token('IDENTIFIER', 'acc_number')]), Tree('column_name', [Token('IDENTIFIER', 'branch_name')]), Tree('column_name', [Token('IDENTIFIER', 'balance')]), Token('RP', ')')]), Tree('value_list', [Token('VALUES', 'values'), Token('LP', '('), Tree('value', [Tree('comparable_value', [Token('INT', '1234')])]), Tree('value', [Tree('comparable_value', [Token('STR', "'sillim'")])]), Tree('value', [Token('NULL', 'NULL')]), Token('RP', ')')])])])])])])
 
         result = self.transform(input)
-        expected = ('insert', 'account', ['account', 'branch_name', 'balance'], [('int',1234), ('str', 'sillim'), ('null', None)])
+        expected = ('insert', 'account', ['account', 'branch_name', 'balance'], [('int',1234), ('char', 'sillim'), ('null', None)])
 
         self.assertTupleEqual(result, expected)
     
@@ -505,6 +506,6 @@ class TransformerTestCase(unittest.TestCase):
         input = Tree('command', [Tree('query_list', [Tree('query', [Tree('insert_query', [Token('INSERT', 'Insert'), Token('INTO', 'into'), Tree('table_name', [Token('IDENTIFIER', 'account')]), Tree('insert_columns_and_sources', [Tree('value_list', [Token('VALUES', 'values'), Token('LP', '('), Tree('value', [Tree('comparable_value', [Token('INT', '1234')])]), Tree('value', [Tree('comparable_value', [Token('STR', '"sillim"')])]), Tree('value', [Token('NULL', 'null')]), Token('RP', ')')])])])])])])
 
         result = self.transform(input)
-        expected = ('insert', 'account', [], [('int',1234), ('str', 'sillim'), ('null', None)])
+        expected = ('insert', 'account', [], [('int',1234), ('char', 'sillim'), ('null', None)])
 
         self.assertTupleEqual(result, expected)

@@ -2,6 +2,7 @@ from exceptions import *
 import test
 from relationdb import MisoDB
 from itertools import zip_longest
+import time # for unique keys
 
 FILENAME = 'myBDB.db'
 
@@ -92,6 +93,7 @@ def create_table(name, schema):
         db[name + '.fk'] = fk_list
         db[name + '.rf'] = [] # (ref_from, ref_table_name, ref_to)
         db[name + '.rf.cnt'] = 0
+        db['.meta.'+name+'.keys'] = []
 
         attrs = db['.meta.attrs']
         for attr in list(ad):
@@ -149,6 +151,8 @@ def drop_table(name):
         del db[name + '.fk']
         del db[name + '.rf']
         del db[name + '.rf.cnt']
+        del db['.meta.'+name+'.keys'] 
+        # TODO
         # should delete the records as well
 
 def desc_table(name):
@@ -179,6 +183,7 @@ def desc_table(name):
         
         print("-------------------------------------------------")
 
+
 def show_tables():
     if test.get_test_flg():
         FILENAME = 'testBDB.db'
@@ -190,11 +195,98 @@ def show_tables():
             print(x)
         print("----------------")
 
+
 def insert_records(name, attrs, vals):
     if test.get_test_flg():
         FILENAME = 'testBDB.db'
     else:
         FILENAME = 'myBDB.db'
+    with MisoDB(FILENAME) as db:
+        try:
+            ad = db[name + '.ad']
+            pk = db[name + '.pk']
+            fk = db[name + '.fk']
+            # refences to tables
+            rt_tab = {tab for _ , tab, _ in fk}
+        except KeyError as e:
+            raise NoSuchTable() from e
+
+        rec = {}
+        # initialize with None
+        for at in ad: # at-> attribute
+            rec[ad] = None
+
+        # make a record
+        if not attrs:
+            if len(ad) != len(vals):
+                raise InsertTypeMismatchError
+            for at, v in zip(ad, vals):
+                if ad[at][0] == 'char' and ad[at][1] < len(v[1]):
+                    l = ad[at][1] # l-> length
+                    v[1] = v[1][0:l]
+                rec[at] = v[1]
+
+        else:
+            if len(attrs) != len(vals):
+                raise InsertTypeMismatchError()
+
+            for at in attrs:
+                if at not in list(ad):
+                    raise InsertColumnExistenceError(at)
+
+            for at, v in zip(attrs, vals):
+                if ad[at][0] != v[0]:
+                    raise InsertTypeMismatchError()
+
+                if ad[at][0] == 'char' and ad[at][1] < len(v[1]):
+                    l = ad[at][1] # l-> length
+                    v[1] = v[1][0:l]
+                rec[at] = v[1]
+        
+        for at in ad: # nullity check
+            if ad[at][2] == False and rec[at] is None:
+                raise InsertColumnNonNullableError(at)
+
+    check_pk_rec(db, name, pk ,rec)
+    check_fk_rec(db, name, rec)
+
+    # if flawless then add the record to the DB
+    key = str(time.time()).replace('.','')
+    db[name+'.'+key+'.rec'] = rec 
+
+    # TODO: change key for meta_keys
+    meta_keys = db['.meta.'+name+'.keys'] 
+    meta_keys.append(key)
+    db['.meta.'+name+'.keys'] = meta_keys
+
+    for at in rec:
+        try:
+            assert isinstance(db[name+'.'+at+'.ci'], list)
+        except (KeyError, AssertionError):
+            # initialize column item
+            db[name+'.'+at+'.ci'] = []
+        col = db[name+'.'+at+'.ci'] 
+        col.append(rec[at])
+        db[name+'.'+at+'.ci'] = col
+            
+def check_pk_rec(db:MisoDB, name:str, pk:list, rec:dict):
+    for at in rec: 
+        if at in pk:
+            col_item = db[name+'.'+at+'.ci']
+            if rec[at] in col_item:
+                raise InsertDuplicatePrimaryKeyError()
+
+def check_fk_rec(db:MisoDB, name:str, fk:list, rec:dict):
+    fkeys = {a for atts, _, _ in fk for a in atts}
+    fpairs = [ (a, n, f) for atts, n, fs in fk for a, f in zip(atts, fs)]
+
+    for at in rec:
+        if at in fkeys:
+            rt, rk = [(n, f) for a, n ,f in fpairs if at == a][0]
+            col_item = db[rt+'.'+rk+'.ci']
+            if rec[at] not in col_item:
+                raise InsertReferentialIntegrityError()
+        
 
 def delete_records():
     if test.get_test_flg():
