@@ -104,6 +104,7 @@ class QueryTransformer(TableTransformer, RecordTransformer):
         return items[0]
     def query(self, items):
         return items[0]
+
 fmtstr = "'{query_type}' requested\n" # the string formnat to be printed
 query_types = {
         "create_table_query": "CREATE TABLE", 

@@ -1,6 +1,7 @@
 from exceptions import *
 import test
 from relationdb import MisoDB
+from itertools import zip_longest
 
 FILENAME = 'myBDB.db'
 
@@ -85,15 +86,18 @@ def create_table(name, schema):
         db[name + '.rf'] = [] # (ref_from, ref_table_name, ref_to)
         db[name + '.rf.cnt'] = 0
 
+        attrs = db['.meta.attrs']
         for attr in list(ad):
-            db['.meta.attr'] = name+'.'+attr
+            attrs.add(name+'.'+attr)
+        db['.meta.attrs'] = attrs
         
         for rf, ref_table, rt in fk_list:
             key = ref_table + '.rf.cnt'
             db[key] = db[key] + 1
 
             key = ref_table + '.rf'
-            for rf_name_rt in zip(rf, name, rt):
+            rf_pairs = zip_longest(rf, [name], rt, fillvalue=name)
+            for rf_name_rt in rf_pairs:
                 referenced = db[key]
                 referenced.append(rf_name_rt)
                 db[key] = referenced
@@ -115,7 +119,8 @@ def drop_table(name):
             db[key] = db[key] - 1
 
             key = ref_table + '.rf'
-            for rf_name_rt in zip(rf, name, rt):
+            rf_pairs = zip_longest(rf, [name], rt, fillvalue=name)
+            for rf_name_rt in rf_pairs:
                 referenced = db[key]
                 referenced.remove(rf_name_rt)
                 db[key] = referenced
@@ -137,15 +142,41 @@ def drop_table(name):
         del db[name + '.rf.cnt']
         # should delete the records as well
 
-
 def desc_table(name):
     if test.get_test_flg():
         FILENAME = 'testBDB.db'
-    pass
+    with MisoDB(FILENAME) as db:
+        try:
+            ad = db[name + '.ad']
+            pk = db[name + '.pk']
+            fk = db[name + '.fk']
+            fk = {a for atts, _, _ in fk for a in atts}
+        except KeyError as e:
+            raise NoSuchTable() from e
+        
+        print_fmt = "{:22s}{:14}{:14}{:14}"
+
+        print("-------------------------------------------------")
+        print(f"table_name [{name}]")
+        print(print_fmt.format("column_name", "type", "null", "key"))
+        for at, d in ad.items():
+            type = d[0] if d[0] != 'char' else f'char{d[1]}'
+            null = 'Y' if d[2] else 'N'
+            p, f = (at in pk), (at in fk)
+            key = ("PRI/FOR" if f else "PRI") if p else ("FOR" if f else "")
+            print(print_fmt.format(at, type, null, key))
+        
+        print("-------------------------------------------------")
+
 def show_tables():
     if test.get_test_flg():
         FILENAME = 'testBDB.db'
-    pass
+    with MisoDB(FILENAME) as db:
+        print("----------------")
+        for x in db['.meta.tables']:
+            print(x)
+        print("----------------")
+
 def insert_records():
     if test.get_test_flg():
         FILENAME = 'testBDB.db'

@@ -4,12 +4,14 @@ from lark import Tree, Token
 from parser import QueryTransformer
 
 from shell import MisoDBShell
+import test
 
 from lark.exceptions import VisitError
 from exceptions import CharLengthError
 
 class TransformerTestCase(unittest.TestCase):
     def setUp(self) -> None:
+        test.test_flg = True # wrapper function doesn't seem to work
         self.transform = QueryTransformer().transform
         select_query = """
                        select customer_name, borrower.loan_number, amount

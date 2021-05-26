@@ -12,7 +12,7 @@ db = 'testBDB.db'
 
 class ShellTestCase(unittest.TestCase):
     def setUp(self) -> None:
-        test.set_test_flg()
+        test.test_flg = True
         self.shell = MisoDBShell()
         return super().setUp()
     def tearDown(self) -> None:
@@ -43,7 +43,7 @@ class ShellTestCase(unittest.TestCase):
     """
     (2) Check if the syntaxerror is raised with erroneous input
     """
-    @patch('builtins.input', return_value='desc table hello; sdifj; ijw;')
+    @patch('builtins.input', side_effect=['desc table hello; sdifj; ijw;','exit' ])
     def test_syntax_error_erroneous_input(self, mock_input):
         #with self.assertRaises(UnexpectedToken) as cm:
         #    self.shell.promptloop()

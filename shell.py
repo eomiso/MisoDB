@@ -14,7 +14,8 @@ class MisoDBShell():
     intro = "Your input should end with ';' to activate the interpreter"
 
     def __init__(self, msg=intro):
-        print(msg)
+        if not test.get_test_flg():
+            print(msg)
         self.parser = Parser("grammar.lark").get_parser()
         init_db()
 
