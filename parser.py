@@ -94,7 +94,7 @@ class TableTransformer(CommonTransformer):
 
 
 class RecordTransformer(CommonTransformer):
-    pass
+
 class QueryTransformer(TableTransformer, RecordTransformer):
     def command(self, items):
         if not isinstance(items[0], tuple):

@@ -9,6 +9,86 @@ import test
 from lark.exceptions import VisitError
 from exceptions import CharLengthError
 
+test_query0 = """
+            CREATE TABLE account(
+                acc_number int,
+                branch_name char(15),
+                balance int NOT NULL,
+                PRIMARY KEY(acc_number)
+            );"""
+test_query1 = """
+            INSERT INTO account(acc_number, branch_name, balance) 
+            VALUES(12345678, 'sillim', 3000);"""
+test_query2 = """
+            INSERT INTO account(acc_number, branch_name, balance) 
+            VALUES(987655, 'jamsil', 3500);"""
+
+test_query3 = """
+            SELECT * FROM account;"""
+test_query4 = """
+            SELECT * FROM account Where balance > 3000;"""
+
+execution_test_query1 = """
+            CREATE TABLE people(
+            SECURITY_ID INT,
+            first_name char(10),
+            middle_name char(10),
+            last_name char(10),
+            PRIMARY KEY(first_name, middle_name, last_name));"""
+execution_test_query2 = """
+            CREATE TABLE instructor(
+            ID INT,
+            first_name char(10),
+            middle_name char(10),
+            last_name char(10),
+            date_of_birth DATE,
+            PRIMARY KEY(ID),
+            FOREIGN KEY(first_name, middle_name, last_name) REFERENCES people(first_name, middle_name, last_name));"""
+execution_test_query3 = """
+            CREATE TABLE department(
+            dept_name char(15),
+            building char(15),
+            budget int,
+            PRIMARY KEY(dept_name));"""
+execution_test_query4 = """
+            CREATE TABLE student(
+            ID int not null,
+            name char(10),
+            dept_name char(15),
+            tot_cred int,
+            PRIMARY KEY(ID),
+            FOREIGN KEY(dept_name) REFERENCES department(dept_name));"""
+execution_test_query5 = """
+            CREATE TABLE advisor(
+            s_id int not null,
+            i_id int,
+            PRIMARY KEY(s_id),
+            FOREIGN KEY(i_id) REFERENCES instructor(ID),
+            FOREIGN KEY(s_id) REFERENCES student(ID)); """
+execution_test_query6 = """
+            INSERT INTO instructor VALUES(12345, 'david', 'von', 'park', '1981-09-10');"""
+execution_test_query7 = """
+            INSERT INTO instructor VALUES(22345, 'James', 'junior', 'Hofer', '1971-09-10');"""
+execution_test_query8 = """
+            INSERT INTO instructor VALUES(42345, 'Nash', 'spark', 'Lee', '1995-09-10');"""
+execution_test_query9 = """
+            INSERT INTO student VALUES(42345, 'LEE', 'CS', 150);"""
+execution_test_query10 = """
+            INSERT INTO student VALUES(42345, 'Cook', 'EEC', 49);"""
+
+test_query6 = """
+            select first_name, middle_name
+            from people
+            where first_name is not null
+            and last_name == 'Eom';"""
+test_qeury7 = """
+            select A.id, B.id
+            from instructor as A, students as B
+            where A.id == B.id and where instructor.date_of_birth is not null;"""
+test_query8 = """
+            delete from instructor
+            where date_of_birth > '1980-11-08';"""
+
 class TransformerTestCase(unittest.TestCase):
     def setUp(self) -> None:
         test.test_flg = True # wrapper function doesn't seem to work

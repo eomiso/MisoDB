@@ -32,9 +32,11 @@ def execute(msg:tuple):
     elif msg[0] == 'insert':
         # TODO
         insert_records()
+        print("The row is inserted")
     elif msg[0] == 'delete':
         # TODO
-        delete_records()
+        cnt = delete_records()
+        print(f"{cnt} rows are deleted")
     elif msg[0] == 'select':
         select_records()
     else:
