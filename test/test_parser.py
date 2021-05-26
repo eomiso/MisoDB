@@ -184,18 +184,18 @@ class TransformerTestCase(unittest.TestCase):
     def test_trans_drop_table_query(self):
         input = 'drop table account;'
         result = self.transform(MisoDBShell().parser.parse(input))
-        expected = [('drop', 'account')]
-        self.assertListEqual(result, expected)
+        expected = ('drop', 'account')
+        self.assertTupleEqual(result, expected)
     
     def test_trans_desc_table_query(self):
         input = 'desc account;'
         result = self.transform(MisoDBShell().parser.parse(input))
-        expected = [('desc', 'account')]
-        self.assertListEqual(result, expected)
+        expected = ('desc', 'account')
+        self.assertTupleEqual(result, expected)
         
     def test_trans_show_tables_query(self):
         input = 'show tables;'
         result = self.transform(MisoDBShell().parser.parse(input))
-        expected = [('show', 0)]
-        self.assertListEqual(result, expected)
+        expected = ('show', 0)
+        self.assertTupleEqual(result, expected)
         

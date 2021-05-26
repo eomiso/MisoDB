@@ -2,12 +2,11 @@ from exceptions import *
 import test
 from relationdb import MisoDB
 
-if test.test_flg:
-    FILENAME = 'testBDB.db'
-else:
-    FILENAME = 'myBDB.db'
+FILENAME = 'myBDB.db'
 
 def init_db():
+    if test.get_test_flg():
+        FILENAME = 'testBDB.db'
     with MisoDB(FILENAME, flags=MisoDB.CREATE) as db:
         try:
             assert isinstance(db['.meta.tables'], set)
@@ -38,8 +37,8 @@ def execute(msg:tuple):
     elif msg[0] == 'select':
         select_records()
     else:
-        if test.test_flg:
-            raise NotImplementedError("Execute")
+        if test.get_test_flg():
+            raise NotImplementedError("problem occured in 'execute()'")
 
 def check_fk(db:MisoDB, ad:dict, fk:tuple):
     atts, ref_table, ref_atts = fk
@@ -67,6 +66,8 @@ def check_fk(db:MisoDB, ad:dict, fk:tuple):
 
 
 def create_table(name, schema):
+    if test.get_test_flg():
+        FILENAME = 'testBDB.db'
     with MisoDB(FILENAME) as db:
         # ad -> attribute dictionary
         ad, pk, fk_list = schema 
@@ -98,6 +99,8 @@ def create_table(name, schema):
                 db[key] = referenced
 
 def drop_table(name):
+    if test.get_test_flg():
+        FILENAME = 'testBDB.db'
     with MisoDB(FILENAME) as db:
         try:
             rf_cnt = db[name + '.rf.cnt']
@@ -135,13 +138,23 @@ def drop_table(name):
         # should delete the records as well
 
 
-def desc_table():
+def desc_table(name):
+    if test.get_test_flg():
+        FILENAME = 'testBDB.db'
     pass
 def show_tables():
+    if test.get_test_flg():
+        FILENAME = 'testBDB.db'
     pass
 def insert_records():
+    if test.get_test_flg():
+        FILENAME = 'testBDB.db'
     pass
 def delete_records():
+    if test.get_test_flg():
+        FILENAME = 'testBDB.db'
     pass
 def select_records():
+    if test.get_test_flg():
+        FILENAME = 'testBDB.db'
     pass

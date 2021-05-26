@@ -5,4 +5,11 @@ import sys
 sys.path.insert(0,'../')
 
 test_flg =False
-__all__ = ['test_flg', 'test_shell']
+
+def set_test_flg():
+    test_flg = True
+
+def get_test_flg():
+    return test_flg
+
+__all__ = ['set_test_flg', 'get_test_flg', 'test_shell']
