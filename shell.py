@@ -25,8 +25,8 @@ class MisoDBShell():
             for query in self.input_queries(prompt):
                 try:
                     tree = self.parser.parse(query)
-                    #print(tree.pretty())
-                    #print(tree)
+                    print(tree.pretty())
+                    print(tree)
                     param = QueryTransformer().transform(tree)
                     execute(param)
                 except lark.exceptions.UnexpectedInput:

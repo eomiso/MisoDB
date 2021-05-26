@@ -375,5 +375,87 @@ class TransformerTestCase(unittest.TestCase):
         input = Tree('predicate', [Tree('null_predicate', [Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name', [Token('IDENTIFIER', 'id')]), Tree('null_operation', [Token('IS', 'is'), Token('NOT', 'not'), Token('NULL', 'null')])])])
         result = self.transform(input)
         expected = [('attr', 'people', 'id'), False]
-    
+
+        self.assertTupleEqual(result, expected)
+
+    def test_trans_boolean_test_predicate(self):
+        input = Tree('boolean_test', [Tree('predicate', [Tree('comparison_predicate', [Tree('comp_operand', [Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name', [Token('IDENTIFIER', 'middle_name')])]), Token('COMP_OP', '='), Tree('comp_operand', [Tree('comparable_value', [Token('STR', "'FON'")])])])])])
+        result = self.transform(input)
+        expected = ['=', ('attr', 'people', 'middle_name'), ('str', 'fon')]
+
+        self.assertTupleEqual(result, expected)
+
+    def test_trans_boolean_factor(self):
+        # select * from people 
+        # where people.first_name = 'David' and 
+        # people.id is not null and (people.middle_name = 'VON' or people.middle_name = 'FON');
+        input = Tree('boolean_factor', [Tree('boolean_test', [Tree('predicate', [Tree('comparison_predicate', [Tree('comp_operand', [Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name', [Token('IDENTIFIER', 'middle_name')])]), Token('COMP_OP', '='), Tree('comp_operand', [Tree('comparable_value', [Token('STR', "'FON'")])])])])])])
+        result = self.transform(input)
+        expected = ('pos', ['=', ('attr', 'people', 'middle_name'), ('str', 'von')])
+
+        self.assertTupleEqual(result, expected)
+
+    def test_trans_boolean_factor_with_parenthesis(self):
+        # select * from people 
+        # where people.first_name = 'David' and
+        # people.id is not null and 
+        # not (people.middle_name = 'VON');
+        input = Tree('boolean_factor', [Token('NOT', 'not'), Tree('boolean_test', [Tree('parenthesized_boolean_expr', [Token('LP', '('), Tree('boolean_expr', [Tree('boolean_term', [Tree('boolean_factor', [Tree('boolean_test', [Tree('predicate', [Tree('comparison_predicate', [Tree('comp_operand', [Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name', [Token('IDENTIFIER', 'middle_name')])]), Token('COMP_OP', '='), Tree('comp_operand', [Tree('comparable_value', [Token('STR', "'VON'")])])])])])])])]), Token('RP', ')')])])])
+        result = self.transform(input)
+        expected = ('neg', ['=', ('attr', 'people', 'middle_name'), ('str', 'von')])
+
+        self.assertTupleEqual(result, expected)
+
+    def test_trans_boolean_term(self):
+        # select * from people where 
+        # people.id is not null and people.middle_name = 'VON' and people.last_name = 'Lee';
+        # triple and
+        input = Tree('boolean_term', [Tree('boolean_factor', [Tree('boolean_test', [Tree('predicate', [Tree('null_predicate', [Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name', [Token('IDENTIFIER', 'id')]), Tree('null_operation', [Token('IS', 'is'), Token('NOT', 'not'), Token('NULL', 'null')])])])])])
+                                     , Token('AND', 'and')
+                                     , Tree('boolean_factor', [Tree('boolean_test', [Tree('predicate', [Tree('comparison_predicate', [Tree('comp_operand', [Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name', [Token('IDENTIFIER', 'middle_name')])]), Token('COMP_OP', '='), Tree('comp_operand', [Tree('comparable_value', [Token('STR', "'VON'")])])])])])])
+                                     , Token('AND', 'and')
+                                     , Tree('boolean_factor', [Tree('boolean_test', [Tree('predicate', [Tree('comparison_predicate', [Tree('comp_operand', [Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name', [Token('IDENTIFIER', 'last_name')])]), Token('COMP_OP', '='), Tree('comp_operand', [Tree('comparable_value', [Token('STR', "'Lee'")])])])])])])])
+        result = self.transform(input)
+        expected = [
+                    [('pos', [('attr', 'people', 'id'), False])
+                        , ('pos', ['=', ('attr', 'people', 'middle_name'), ('str', 'von')]), 'and']
+                    , ('pos', ['=', ('attr', 'people', 'last_name'), ('str', 'lee')])
+                    , 'and']
+
+        self.assertListEqual(result, expected)
+
+    def test_trans_boolean_expr_with_parenthesis_behind(self):
+        # select * from people where 
+        # people.id is not null and (people.middle_name = 'VON' and people.last_name = 'Lee');
+        # with parenthesis behind
+        input = Tree('boolean_expr', [Tree('boolean_term', [Tree('boolean_factor', [Tree('boolean_test', [Tree('predicate', [Tree('null_predicate', [Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name', [Token('IDENTIFIER', 'id')]), Tree('null_operation', [Token('IS', 'is'), Token('NOT', 'not'), Token('NULL', 'null')])])])])])
+                                                           , Token('AND', 'and')
+                                                           , Tree('boolean_factor', [Tree('boolean_test', [Tree('parenthesized_boolean_expr'
+                                                                                                                    , [Token('LP', '(')
+                                                                                                                     , Tree('boolean_expr', [Tree('boolean_term', [Tree('boolean_factor', [Tree('boolean_test', [Tree('predicate', [Tree('comparison_predicate', [Tree('comp_operand', [Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name', [Token('IDENTIFIER', 'middle_name')])]), Token('COMP_OP', '='), Tree('comp_operand', [Tree('comparable_value', [Token('STR', "'VON'")])])])])])])
+                                                                                                                                                                  , Token('AND', 'and')
+                                                                                                                                                                  , Tree('boolean_factor', [Tree('boolean_test', [Tree('predicate', [Tree('comparison_predicate', [Tree('comp_operand', [Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name', [Token('IDENTIFIER', 'last_name')])]), Token('COMP_OP', '='), Tree('comp_operand', [Tree('comparable_value', [Token('STR', "'Lee'")])])])])])])])])
+                                                                                                                     , Token('RP', ')')])])])])])
+        result = self.transform(input)
+        expected = [
+                        ('pos', [('attr', 'people', 'id'), False])
+                        , ('pos', [ ('pos', ['=', ('attr', 'people', 'middle_name'), ('str', 'von')])
+                                  , ('pos', ['=', ('attr', 'people', 'last_name'), ('str', 'fon')])
+                                  , 'and'])
+                        , 'and']
+        self.assertListEqual(result, expected)
+
+    def test_trans_parenthesized_boolean_expr(self):
+        # select * from people 
+        # where people.first_name = 'David' and 
+        # people.id is not null and (people.middle_name = 'VON' or people.middle_name = 'FON');
+        input = Tree('parenthesized_boolean_expr', [Token('LP', '('), Tree('boolean_expr', [Tree('boolean_term', [Tree('boolean_factor', [Tree('boolean_test', [Tree('predicate', [Tree('comparison_predicate', [Tree('comp_operand', [Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name', [Token('IDENTIFIER', 'middle_name')])]), Token('COMP_OP', '='), Tree('comp_operand', [Tree('comparable_value', [Token('STR', "'VON'")])])])])])])]), Token('OR', 'or'), Tree('boolean_term', [Tree('boolean_factor', [Tree('boolean_test', [Tree('predicate', [Tree('comparison_predicate', [Tree('comp_operand', [Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name', [Token('IDENTIFIER', 'middle_name')])]), Token('COMP_OP', '='), Tree('comp_operand', [Tree('comparable_value', [Token('STR', "'FON'")])])])])])])])]), Token('RP', ')')])
+        result = self.transform(input)
+        expected = ('pos', [ ('pos', ['=', ('attr', 'people', 'middle_name'), ('str', 'von')])
+                                  , ('pos', ['=', ('attr', 'people', 'last_name'), ('str', 'fon')])
+                                  , 'and'])
+        self.assertTupleEqual(result, expected)
+
+# --------------------------------
+    def test_trans_value(self):
 
