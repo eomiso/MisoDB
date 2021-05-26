@@ -1,5 +1,6 @@
 import unittest
 from unittest import result
+from unittest.case import expectedFailure
 from lark import Tree, Token
 from parser import QueryTransformer
 
@@ -80,11 +81,11 @@ test_query6 = """
             select first_name, middle_name
             from people
             where first_name is not null
-            and last_name == 'Eom';"""
+            and last_name = 'Eom';"""
 test_qeury7 = """
             select A.id, B.id
             from instructor as A, students as B
-            where A.id == B.id and where instructor.date_of_birth is not null;"""
+            where A.id = B.id and where instructor.date_of_birth is not null;"""
 test_query8 = """
             delete from instructor
             where date_of_birth > '1980-11-08';"""
@@ -281,3 +282,86 @@ class TransformerTestCase(unittest.TestCase):
         expected = ('show', 0)
         self.assertTupleEqual(result, expected)
         
+    def test_trans_null_operation_is_not_null(self):
+        input = Tree('null_operation', [Token('IS', 'is'), Token('NOT', 'not'), Token('NULL', 'null')])
+        result = self.transform(input)
+        expected = False
+        self.assertEqual(result, expected)
+
+    def test_trans_null_operation_is_null(self):
+        input = Tree('null_operation', [Token('IS', 'is'),  Token('NULL', 'null')])
+        result = self.transform(input)
+        expected = True
+        self.assertEqual(result, expected)
+
+    def test_trans_null_predicate(self):
+        input = Tree('null_predicate', [Tree('column_name', [Token('IDENTIFIER', 'first_name')]), Tree('null_operation', [Token('IS', 'is'), Token('NOT', 'not'), Token('NULL', 'null')])])
+        result = self.transform(input)
+        expected = [('attr', 'first_name'), False]
+
+        self.assertListEqual(result, expected)
+    
+    def test_trans_null_predicate_with_table_name(self):
+        input = Tree('null_predicate', [Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name', [Token('IDENTIFIER', 'first_name')]), Tree('null_operation', [Token('IS', 'is'), Token('NOT', 'not'), Token('NULL', 'null')])])
+        result = self.transform(input)
+        expected = [('attr', 'people', 'first_name'), False]
+
+        self.assertListEqual(result, expected)
+    
+    def test_trans_comparable_value_str(self):
+        input = Tree('comparable_value', [Token('STR', "'EP'")])
+        result = self.transform(input)
+        expected = ('str', 'EP')
+       
+        self.assertTupleEqual(result,expected)
+
+    def test_trans_comparable_value_int(self):
+        input = Tree('comparable_value', [Token('INT', "5")])
+        result = self.transform(input)
+        expected = ('int', 5)
+       
+        self.assertTupleEqual(result,expected)
+
+    def test_trans_comparable_value_date(self):
+        input = Tree('comparable_value', [Token('DATE', "1995-07-09")])
+        result = self.transform(input)
+        expected = ('date', '1995-07-09')
+       
+        self.assertTupleEqual(result,expected)
+    
+    def test_trans_comp_operand_comparable_val(self):
+        input = Tree('comp_operand', [Tree('comparable_value', [Token('INT', "4")])])
+        result = self.transform(input)
+        expected = ('int',4)
+
+        self.assertTupleEqual(result,expected)
+    
+    def test_trans_comp_operand_attr_with_table(self):
+        input = Tree('comp_operand', [Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name', [Token('IDENTIFIER', 'first_name')])])
+        result = self.transform(input)
+        expected = ('attr', 'people', 'first_name')
+
+        self.assertTupleEqual(result,expected)
+
+    def test_trans_comp_operand_attr_without_table(self):
+        input = Tree('comp_operand', [Tree('column_name', [Token('IDENTIFIER', 'las_name')])])
+        result = self.transform(input)
+        expected = ('attr', 'las_name')
+
+        self.assertTupleEqual(result,expected)
+    
+    def test_trans_comp_predicate(self):
+        input = Tree('comparison_predicate', [Tree('comp_operand', [Tree('column_name', [Token('IDENTIFIER', 'id')])]), Token('COMP_OP', '>'), Tree('comp_operand', [Tree('comparable_value', [Token('INT', "4")])])])
+        result = self.transform(input)
+        expected = ['>', ('attr', 'id'), ('int', 4)]
+
+        self.assertTupleEqual(result,expected)
+    
+    def test_trans_comp_predicate_str(self):
+        input = Tree('comparison_predicate', [Tree('comp_operand', [Tree('table_name', [Token('IDENTIFIER', 'people')]), Tree('column_name', [Token('IDENTIFIER', 'first_name')])]), Token('COMP_OP', '='), Tree('comp_operand', [Tree('comparable_value', [Token('STR', "'DAVID'")])])])
+        result = self.transform(input)
+        expected = ['=', ('attr', 'people', 'first_name'), ('str', 'david')]
+
+        self.assertTupleEqual(result,expected)
+    
+

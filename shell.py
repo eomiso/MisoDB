@@ -1,6 +1,7 @@
 COMMAND = 'Query'
 PARAM = 'Param'
 
+from exceptions import SimpleDatabaseError
 import sys
 from parser import Parser, QueryTransformer
 import lark
@@ -24,6 +25,8 @@ class MisoDBShell():
             for query in self.input_queries(prompt):
                 try:
                     tree = self.parser.parse(query)
+                    #print(tree.pretty())
+                    #print(tree)
                     param = QueryTransformer().transform(tree)
                     execute(param)
                 except lark.exceptions.UnexpectedInput:
@@ -32,6 +35,9 @@ class MisoDBShell():
                 except lark.exceptions.VisitError as cm:
                     print(prompt + str(cm.__context__))
                     if test.test_flg: raise cm.__context__
+                except SimpleDatabaseError as e:
+                    print(prompt + str(e))
+                    if test.get_test_flg(): raise 
             
                     
 
@@ -44,7 +50,3 @@ class MisoDBShell():
         while not s.rstrip().endswith(';'):
             s += '\n' + input()
         return [x.lstrip() + ';' for x in s.split(';')[:-1]]
-
-    def terminate(self, msg = "Terminate Program"):
-        term_msg = msg        
-        sys.exit(term_msg) 

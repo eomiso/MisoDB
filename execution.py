@@ -8,6 +8,8 @@ FILENAME = 'myBDB.db'
 def init_db():
     if test.get_test_flg():
         FILENAME = 'testBDB.db'
+    else:
+        FILENAME = 'myBDB.db'
     with MisoDB(FILENAME, flags=MisoDB.CREATE) as db:
         try:
             assert isinstance(db['.meta.tables'], set)
@@ -39,6 +41,7 @@ def execute(msg:tuple):
         print(f"{cnt} rows are deleted")
     elif msg[0] == 'select':
         select_records()
+        print("select")
     else:
         if test.get_test_flg():
             raise NotImplementedError("problem occured in 'execute()'")
@@ -71,6 +74,8 @@ def check_fk(db:MisoDB, ad:dict, fk:tuple):
 def create_table(name, schema):
     if test.get_test_flg():
         FILENAME = 'testBDB.db'
+    else:
+        FILENAME = 'myBDB.db'
     with MisoDB(FILENAME) as db:
         # ad -> attribute dictionary
         ad, pk, fk_list = schema 
@@ -107,6 +112,8 @@ def create_table(name, schema):
 def drop_table(name):
     if test.get_test_flg():
         FILENAME = 'testBDB.db'
+    else:
+        FILENAME = 'myBDB.db'
     with MisoDB(FILENAME) as db:
         try:
             rf_cnt = db[name + '.rf.cnt']
@@ -147,6 +154,8 @@ def drop_table(name):
 def desc_table(name):
     if test.get_test_flg():
         FILENAME = 'testBDB.db'
+    else:
+        FILENAME = 'myBDB.db'
     with MisoDB(FILENAME) as db:
         try:
             ad = db[name + '.ad']
@@ -173,6 +182,8 @@ def desc_table(name):
 def show_tables():
     if test.get_test_flg():
         FILENAME = 'testBDB.db'
+    else:
+        FILENAME = 'myBDB.db'
     with MisoDB(FILENAME) as db:
         print("----------------")
         for x in db['.meta.tables']:
@@ -182,12 +193,17 @@ def show_tables():
 def insert_records():
     if test.get_test_flg():
         FILENAME = 'testBDB.db'
-    pass
+    else:
+        FILENAME = 'myBDB.db'
+
 def delete_records():
     if test.get_test_flg():
         FILENAME = 'testBDB.db'
-    pass
+    else:
+        FILENAME = 'myBDB.db'
+
 def select_records():
     if test.get_test_flg():
         FILENAME = 'testBDB.db'
-    pass
+    else:
+        FILENAME = 'myBDB.db'

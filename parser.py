@@ -94,6 +94,7 @@ class TableTransformer(CommonTransformer):
 
 
 class RecordTransformer(CommonTransformer):
+    pass
 
 class QueryTransformer(TableTransformer, RecordTransformer):
     def command(self, items):
